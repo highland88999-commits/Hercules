@@ -2,33 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Vortex | Solar System Explorer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nexus Vortex | Adaptive Solar Explorer</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
-        canvas { display: block; }
+        :root {
+            --neon-blue: #00ffff;
+            --glass-bg: rgba(0, 255, 255, 0.05);
+        }
 
-        /* Glass Holoframe Overlay */
+        body, html { 
+            margin: 0; 
+            padding: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background: #000; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        canvas { display: block; touch-action: none; }
+
+        /* Adaptive Glass Holoframe */
         #holoframe {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0.9);
-            width: 400px;
-            max-height: 70vh;
-            background: rgba(0, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
+            width: 90%; /* Adaptive width */
+            max-width: 500px;
+            max-height: 80vh; /* Prevents overflow on short screens */
+            background: rgba(0, 10, 20, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 15px;
+            border-radius: 20px;
             color: #fff;
-            padding: 30px;
+            padding: 25px;
             display: none;
             flex-direction: column;
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.15);
             z-index: 1000;
             opacity: 0;
-            transition: all 0.4s ease;
-            overflow-y: auto;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            box-sizing: border-box;
         }
 
         #holoframe.active {
@@ -37,43 +53,76 @@
             transform: translate(-50%, -50%) scale(1);
         }
 
-        #holoframe h2 { color: #00ffff; margin-top: 0; border-bottom: 1px solid #00ffff; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
-        #holoframe p { line-height: 1.6; font-size: 0.95rem; }
-        
-        .close-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: 1px solid #00ffff;
-            color: #00ffff;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 5px;
+        #holoframe h2 { 
+            color: var(--neon-blue); 
+            margin: 0 0 15px 0; 
+            font-size: 1.5rem;
+            text-transform: uppercase; 
+            letter-spacing: 3px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            padding-bottom: 10px;
         }
 
-        .instruction {
+        #content-wrapper {
+            overflow-y: auto;
+            padding-right: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--neon-blue) transparent;
+        }
+
+        #content-wrapper::-webkit-scrollbar { width: 4px; }
+        #content-wrapper::-webkit-scrollbar-thumb { background: var(--neon-blue); }
+
+        #planet-info { line-height: 1.7; font-size: 1rem; color: #e0e0e0; }
+        
+        .close-btn {
+            align-self: flex-end;
+            background: none;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            cursor: pointer;
+            padding: 8px 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+
+        .close-btn:hover { background: var(--neon-blue); color: #000; }
+
+        /* Bottom UI Label */
+        .instruction-box {
             position: absolute;
             bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(0, 255, 255, 0.5);
+            width: 100%;
+            text-align: center;
+            color: rgba(0, 255, 255, 0.4);
             pointer-events: none;
             text-transform: uppercase;
-            font-size: 12px;
+            font-size: 10px;
             letter-spacing: 2px;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 600px) {
+            #holoframe { padding: 20px; }
+            #holoframe h2 { font-size: 1.2rem; }
+            .instruction-box { font-size: 8px; bottom: 10px; }
         }
     </style>
 </head>
 <body>
 
     <div id="holoframe">
-        <button class="close-btn" onclick="closeHolo()">EXIT</button>
-        <h2 id="planet-name">Planet Name</h2>
-        <div id="planet-info"></div>
+        <h2 id="planet-name">Nexus Node</h2>
+        <div id="content-wrapper">
+            <div id="planet-info">Initializing data...</div>
+        </div>
+        <button class="close-btn" onclick="closeHolo()">DISMISS</button>
     </div>
 
-    <div class="instruction">Swipe to Orbit • Scroll to Zoom • Click Planets for Data</div>
+    <div class="instruction-box">Touch/Click to explore planets • Pinch/Scroll to scale galaxy</div>
 
     <script type="importmap">
         {
@@ -88,139 +137,115 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- NASA DATA ---
+        // NASA-Sourced facts
         const solarData = {
-            "Sun": "The Sun is a 4.5 billion-year-old star – a hot glowing ball of hydrogen and helium at the center of our solar system. It is roughly 93 million miles from Earth.",
-            "Mercury": "The smallest planet in our solar system and closest to the Sun—is only slightly larger than Earth's Moon. It has no moons.",
-            "Venus": "Spinning in the opposite direction from most planets, Venus is the hottest planet, with a surface temperature hot enough to melt lead.",
-            "Earth": "Our home planet is the only place we know of so far that’s inhabited by living things. It is the only world in our solar system with liquid water on the surface.",
-            "Mars": "Mars is a dusty, cold, desert world with a very thin atmosphere. There is strong evidence Mars was—billions of years ago—wetter and warmer, with a thicker atmosphere.",
-            "Jupiter": "Jupiter is more than twice as massive than the other planets of our solar system combined. The giant planet's Great Red spot is a centuries-old storm bigger than Earth.",
-            "Saturn": "Adorned with a dazzling, complex system of icy rings, Saturn is unique in our solar system. The other giant planets have rings, but none are as spectacular as Saturn's.",
-            "Uranus": "Uranus—seventh planet from the Sun—rotates at a nearly 90-degree angle from the plane of its orbit. This unique tilt makes Uranus appear to spin on its side.",
-            "Neptune": "Neptune—the eighth and most distant major planet orbiting our Sun—is dark, cold and whipped by supersonic winds. It was the first planet located through mathematical calculations."
+            "Sun": "The Sun is a 4.5 billion-year-old star – a hot glowing ball of hydrogen and helium at the center of our solar system. It makes up more than 99% of the solar system's matter.",
+            "Mercury": "The smallest planet and closest to the Sun. It is only slightly larger than Earth's Moon and has no moons of its own.",
+            "Venus": "The hottest planet in our solar system, with a surface temperature hot enough to melt lead. It spins in the opposite direction from most planets.",
+            "Earth": "The only world known to support life so far. It is the only place in our solar system with liquid water on the surface.",
+            "Mars": "A dusty, cold, desert world with a thin atmosphere. Evidence suggests it was much wetter and warmer billions of years ago.",
+            "Jupiter": "The largest planet – twice as massive as all other planets combined. Its Great Red Spot is a storm larger than Earth.",
+            "Saturn": "Famous for its dazzling and complex system of icy rings. It has the highest count of moons in our solar system.",
+            "Uranus": "The seventh planet, rotating at a nearly 90-degree angle, making it appear to spin on its side.",
+            "Neptune": "The most distant major planet, whipped by supersonic winds and located through mathematical calculations before it was seen."
         };
 
-        // --- SCENE SETUP ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Performance optimization
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.minDistance = 5;
-        controls.maxDistance = 2000;
+        controls.maxDistance = 1500;
+        controls.minDistance = 10;
 
-        // --- LIGHTING ---
-        const sunLight = new THREE.PointLight(0xffffff, 2, 2000);
+        // Space Lighting
+        const sunLight = new THREE.PointLight(0xffffff, 3, 2000);
         scene.add(sunLight);
-        scene.add(new THREE.AmbientLight(0x404040, 0.5));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.2));
 
-        // --- GALAXY BACKGROUND (360 Experience) ---
-        const starGeometry = new THREE.BufferGeometry();
-        const starCount = 15000;
-        const posArray = new Float32Array(starCount * 3);
-        for(let i=0; i < starCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 3000;
+        // Adaptive Galaxy Background
+        const starGeo = new THREE.BufferGeometry();
+        const stars = [];
+        for(let i=0; i<10000; i++) {
+            stars.push((Math.random()-0.5)*3000, (Math.random()-0.5)*3000, (Math.random()-0.5)*3000);
         }
-        starGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const starMaterial = new THREE.PointsMaterial({ size: 0.7, color: 0xffffff });
-        const stars = new THREE.Points(starGeometry, starMaterial);
-        scene.add(stars);
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(stars, 3));
+        const starMat = new THREE.PointsMaterial({ size: 1.5, color: 0x00ffff, transparent: true, opacity: 0.6 });
+        const starField = new THREE.Points(starGeo, starMat);
+        scene.add(starField);
 
-        // --- PLANET GENERATOR ---
         const planets = [];
-        const createPlanet = (name, size, distance, color) => {
-            const geo = new THREE.SphereGeometry(size, 32, 32);
-            const mat = new THREE.MeshPhongMaterial({ color: color, emissive: color, emissiveIntensity: 0.2 });
-            const mesh = new THREE.Mesh(geo, mat);
-            
-            // Random orbit position
-            const angle = Math.random() * Math.PI * 2;
-            mesh.position.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
-            mesh.userData = { name: name, info: solarData[name] };
-            
+        const createBody = (name, size, dist, col) => {
+            const mesh = new THREE.Mesh(
+                new THREE.SphereGeometry(size, 32, 32),
+                new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: name === "Sun" ? 1 : 0.1 })
+            );
+            const pos = Math.random() * Math.PI * 2;
+            mesh.position.set(Math.cos(pos)*dist, 0, Math.sin(pos)*dist);
+            mesh.userData = { name, info: solarData[name] };
             scene.add(mesh);
             planets.push(mesh);
 
-            // Orbit Ring
-            const ringGeo = new THREE.RingGeometry(distance, distance + 0.5, 64);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0x444444, side: THREE.DoubleSide });
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = Math.PI / 2;
-            scene.add(ring);
-            
-            return mesh;
-        };
-
-        // --- INITIALIZE SYSTEM ---
-        const sun = createPlanet("Sun", 15, 0, 0xffcc00);
-        createPlanet("Mercury", 2, 40, 0xaaaaaa);
-        createPlanet("Venus", 4, 70, 0xe3bb76);
-        createPlanet("Earth", 4.2, 100, 0x2233ff);
-        createPlanet("Mars", 3, 130, 0xff4422);
-        createPlanet("Jupiter", 10, 200, 0xffa500);
-        createPlanet("Saturn", 8, 260, 0xdfd195);
-        createPlanet("Uranus", 6, 320, 0x88ddff);
-        createPlanet("Neptune", 6, 380, 0x3366ff);
-
-        camera.position.set(150, 100, 300);
-
-        // --- INTERACTION ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        const onMouseClick = (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(planets);
-
-            if (intersects.length > 0) {
-                const p = intersects[0].object;
-                showHolo(p.userData.name, p.userData.info);
-            } else {
-                closeHolo();
+            if(dist > 0) {
+                const ring = new THREE.Mesh(
+                    new THREE.RingGeometry(dist, dist+0.3, 128),
+                    new THREE.MeshBasicMaterial({ color: 0x00ffff, opacity: 0.1, transparent: true, side: THREE.DoubleSide })
+                );
+                ring.rotation.x = Math.PI/2;
+                scene.add(ring);
             }
         };
 
-        window.showHolo = (name, info) => {
-            document.getElementById('planet-name').innerText = name;
-            document.getElementById('planet-info').innerHTML = `<p>${info}</p>`;
-            document.getElementById('holoframe').classList.add('active');
-        };
+        // Scaled for screen readability
+        createBody("Sun", 12, 0, 0xffaa00);
+        createBody("Mercury", 1.8, 35, 0x888888);
+        createBody("Venus", 3.2, 55, 0xffcc33);
+        createBody("Earth", 3.5, 80, 0x00aaff);
+        createBody("Mars", 2.5, 105, 0xff4400);
+        createBody("Jupiter", 8.5, 150, 0xffbb99);
+        createBody("Saturn", 7, 200, 0xdfd195);
+        createBody("Uranus", 5, 250, 0xccffff);
+        createBody("Neptune", 5, 300, 0x3366ff);
 
-        window.closeHolo = () => {
-            document.getElementById('holoframe').classList.remove('active');
-        };
+        camera.position.set(0, 150, 300);
 
-        window.addEventListener('click', onMouseClick);
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function handleSelect(x, y) {
+            mouse.x = (x / window.innerWidth) * 2 - 1;
+            mouse.y = -(y / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(planets);
+            if (intersects.length > 0) {
+                const p = intersects[0].object.userData;
+                document.getElementById('planet-name').innerText = p.name;
+                document.getElementById('planet-info').innerHTML = p.info;
+                document.getElementById('holoframe').classList.add('active');
+            }
+        }
+
+        window.addEventListener('click', (e) => handleSelect(e.clientX, e.clientY));
+        window.addEventListener('touchstart', (e) => handleSelect(e.touches[0].clientX, e.touches[0].clientY));
+        
+        window.closeHolo = () => document.getElementById('holoframe').classList.remove('active');
+
+        // Adaptive Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- ANIMATION LOOP ---
         function animate() {
             requestAnimationFrame(animate);
-            
-            // Subtle rotation for planets
-            planets.forEach((p, i) => {
-                if(i !== 0) { // Don't rotate sun position
-                    const time = Date.now() * 0.0001 * (10 / (i * 5));
-                    const dist = 40 + (i-1) * 45;
-                    // p.position.x = Math.cos(time) * dist;
-                    // p.position.z = Math.sin(time) * dist;
-                }
-                p.rotation.y += 0.01;
-            });
-
-            stars.rotation.y += 0.0002;
+            starField.rotation.y += 0.0003;
+            planets.forEach(p => p.rotation.y += 0.01);
             controls.update();
             renderer.render(scene, camera);
         }
