@@ -74,13 +74,22 @@
 
         #promo-nav {
             position: absolute;
+            bottom: 200px;
+            width: 100%;
+            text-align: center;
+            z-index: 1001;
+        }
+
+        #continue-nav {
+            position: absolute;
             bottom: 120px;
             width: 100%;
             text-align: center;
             z-index: 1001;
         }
 
-        #promo-nav .nav-btn {
+        #promo-nav .nav-btn,
+        #continue-nav .nav-btn {
             font-size: 1.8vw;
             padding: 20px 60px;
         }
@@ -92,6 +101,10 @@
             transform: translateX(-50%);
             font-size: 1.5vw;
             opacity: 0.8;
+        }
+
+        #initialize-content {
+            display: none;
         }
 
         #youtube-player {
@@ -115,12 +128,23 @@
         </div>
 
         <div id="promo-nav">
-            <button class="nav-btn" onclick="claimCredits(); event.stopPropagation();">
+            <button class="nav-btn" onclick="claimCredits()">
                 SUBSCRIBE & CLAIM 300 CREDITS NOW!
             </button>
         </div>
 
-        <p id="overlay-instruction">(Click anywhere else to sync audio & visual symbiotes)</p>
+        <div id="continue-nav">
+            <button class="nav-btn" onclick="switchToInitialize()">
+                CONTINUE TO NEXUS VORTEX »
+            </button>
+        </div>
+
+        <div id="initialize-content">
+            <h1>INITIALIZE NEXUS STREAM</h1>
+            <p>(Click to sync audio & visual symbiotes)</p>
+        </div>
+
+        <p id="overlay-instruction">(Click on video or subscribe button to claim credits, or continue to experience)</p>
     </div>
 
     <div id="ui-layer">
@@ -188,9 +212,28 @@
         videos[0].play();
     }
 
+    // State management
+    let state = 'promo'; // 'promo' or 'initialize'
+
+    window.switchToInitialize = () => {
+        state = 'initialize';
+        document.getElementById('promo-carousel').style.display = 'none';
+        document.getElementById('promo-nav').style.display = 'none';
+        document.getElementById('continue-nav').style.display = 'none';
+        document.getElementById('initialize-content').style.display = 'block';
+        document.getElementById('overlay-instruction').textContent = '(Click to sync audio & visual symbiotes)';
+    };
+
+    // Overlay click handler
+    const overlay = document.getElementById('overlay');
+    overlay.addEventListener('click', (e) => {
+        if (state === 'initialize' && e.target.tagName !== 'BUTTON') {
+            init();
+        }
+    });
+
     // --- CORE ENGINE ---
     let analyser, dataArray, audioContext;
-    const overlay = document.getElementById('overlay');
 
     async function init() {
         // Start YouTube playlist (shuffled/random start)
@@ -217,11 +260,6 @@
         overlay.style.display = 'none';
         animate();
     }
-    overlay.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'VIDEO') {
-            init();
-        }
-    });
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -269,10 +307,8 @@
         if(!analyser) return;
         analyser.getByteFrequencyData(dataArray);
 
-        const avgFreq = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
         const bassTrigger = dataArray[2] / 255;
-
-        angle += 0.005 + (bassTrigger * 0.05);
+        angle += 0.005 + (bassTrigger * 0.04);
 
         const cosA = Math.cos(angle);
         const sinA = Math.sin(angle);
@@ -283,26 +319,21 @@
             let w1 = x * sinA + w * cosA;
             let y2 = y * cosA - w1 * sinA;
             let w2 = y * sinA + w1 * cosA;
-
-            const dist = 2.5 + (bassTrigger * 1.5); 
-            const factor = 1 / (dist - w2);
+            const factor = 1 / (3.0 + (bassTrigger * 2) - w2);
             return new THREE.Vector3(x1 * factor, y2 * factor, z * factor);
         });
 
         nodes.forEach((node, i) => {
             node.position.copy(projected3D[i]);
-            const freqImpact = dataArray[i % dataArray.length] / 255;
-            const s = 1 + freqImpact * 3;
+            const s = 1 + (dataArray[i % 16] / 255) * 4;
             node.scale.set(s, s, s);
-            node.material.emissive.setHSL(0.5 + freqImpact, 1, 0.5);
         });
 
         lines.forEach(({ line, i, j }) => {
             line.geometry.setFromPoints([projected3D[i], projected3D[j]]);
-            line.material.opacity = 0.2 + (bassTrigger * 0.8);
         });
 
-        nodeGroup.rotation.y += 0.005;
+        nodeGroup.rotation.y += 0.002;
         renderer.render(scene, camera);
     }
 </script>
