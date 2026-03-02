@@ -123,6 +123,59 @@
             font-size: 1.6em;
             padding: 20px 55px;
         }
+
+        /* Glass Holoframe */
+        #holoframe {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            max-width: 520px;
+            background: rgba(10, 30, 50, 0.75);
+            backdrop-filter: blur(16px);
+            border: 2px solid rgba(0, 255, 255, 0.6);
+            border-radius: 18px;
+            padding: 28px 32px;
+            color: #00ffff;
+            text-align: left;
+            box-shadow: 0 0 60px rgba(0, 255, 255, 0.6);
+            z-index: 2000;
+            font-size: 1.1em;
+            line-height: 1.5;
+        }
+
+        #holo-title {
+            margin: 0 0 16px;
+            text-align: center;
+            font-size: 1.8em;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        #holo-facts {
+            margin: 0 0 24px;
+            white-space: pre-line;
+            opacity: 0.95;
+        }
+
+        #holoframe button {
+            background: transparent;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 28px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        #holoframe button:hover {
+            background: rgba(0, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -154,7 +207,7 @@
 
         <div id="initialize-content">
             <h1>INITIALIZE NEXUS STREAM</h1>
-            <p>(Click to sync audio & visual symbiotes)</p>
+            <p>(Click anywhere to sync symbiotes)</p>
         </div>
 
         <p id="overlay-instruction">(Click on video or subscribe button to claim credits, or continue to experience)</p>
@@ -167,10 +220,17 @@
 
     <div id="youtube-player"></div>
 
+    <!-- Glass Holoframe -->
+    <div id="holoframe">
+        <h2 id="holo-title"></h2>
+        <p id="holo-facts"></p>
+        <button onclick="closeHolo()">CLOSE HOLOFRAME</button>
+    </div>
+
 <script type="module">
     import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
 
-    // YouTube IFrame API
+    // YouTube
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
     document.head.appendChild(tag);
@@ -182,66 +242,38 @@
         player = new YT.Player('youtube-player', {
             height: '1',
             width: '1',
-            playerVars: {
-                'playsinline': 1,
-                'controls': 0,
-                'showinfo': 0,
-                'rel': 0,
-                'modestbranding': 1
-            },
-            events: {
-                'onReady': onPlayerReady,
-                'onStateChange': onPlayerStateChange
-            }
+            playerVars: { 'playsinline': 1, 'controls': 0, 'showinfo': 0, 'rel': 0, 'modestbranding': 1 },
+            events: { 'onReady': onPlayerReady }
         });
     };
 
-    function onPlayerReady(event) {
+    function onPlayerReady() {
         isPlayerReady = true;
-        // We'll start playback later when user proceeds
-    }
-
-    function onPlayerStateChange(event) {
-        if (event.data === YT.PlayerState.ENDED) {
-            // Optional: loop playlist or do nothing (shuffle already randomizes)
-        }
     }
 
     // Navigation
-    window.resetToLanding = () => {
-        window.location.reload(); // Full reset to promo/landing state
-    };
+    window.resetToLanding = () => window.location.reload();
+    window.claimCredits = () => window.open('https://openartai.pxf.io/c/6240385/3321097/38572', '_blank');
 
-    window.claimCredits = () => {
-        window.open('https://openartai.pxf.io/c/6240385/3321097/38572', '_blank');
-    };
-
-    // Promo videos: infinite sequential loop
+    // Promo videos – infinite loop
     const promoSlides = document.querySelectorAll('.promo-slide');
     const videos = document.querySelectorAll('.promo-slide video');
     let currentPromo = 0;
 
     function cyclePromo() {
-        promoSlides.forEach(slide => slide.classList.remove('active'));
+        promoSlides.forEach(s => s.classList.remove('active'));
         promoSlides[currentPromo].classList.add('active');
         currentPromo = (currentPromo + 1) % promoSlides.length;
     }
 
-    videos.forEach(video => {
-        video.addEventListener('ended', () => {
-            // Pause current, cycle to next, play it
-            video.pause();
-            cyclePromo();
-            const nextVideo = videos[currentPromo];
-            nextVideo.currentTime = 0;
-            nextVideo.play().catch(() => {}); // silent fail on mobile autoplay
-        });
-    });
+    videos.forEach(v => v.addEventListener('ended', () => {
+        v.pause();
+        cyclePromo();
+        videos[currentPromo].currentTime = 0;
+        videos[currentPromo].play().catch(() => {});
+    }));
 
-    // Auto-start first video
-    if (videos.length > 0) {
-        videos[0].play().catch(() => {});
-    }
+    if (videos.length) videos[0].play().catch(() => {});
 
     // State
     let state = 'promo';
@@ -249,18 +281,14 @@
     window.switchToInitialize = () => {
         if (state !== 'promo') return;
         state = 'initialize';
-
         document.getElementById('promo-carousel').style.display = 'none';
         document.getElementById('promo-nav').style.display = 'none';
         document.getElementById('continue-nav').style.display = 'none';
         document.getElementById('initialize-content').style.display = 'block';
         document.getElementById('overlay-instruction').textContent = '(Click anywhere to sync symbiotes)';
-
-        // Start audio here (user gesture context)
         startAudioExperience();
     };
 
-    // Overlay click → enter experience
     const overlay = document.getElementById('overlay');
     overlay.addEventListener('click', (e) => {
         if (state === 'initialize' && e.target.tagName !== 'BUTTON') {
@@ -268,31 +296,26 @@
         }
     });
 
-    // --- Audio + VR + Core Engine ---
+    // Audio
     let analyser, dataArray, audioContext;
     let initialized = false;
 
     async function startAudioExperience() {
         if (isPlayerReady && player) {
-            try {
-                player.setVolume(100);
-                player.setShuffle(true);
-                player.cuePlaylist({
-                    list: 'PLlnkmUosVw9jSfM6Qo3j_m-KBQz_-6fSF',
-                    listType: 'playlist',
-                    index: Math.floor(Math.random() * 50) // rough random start
-                });
-                player.playVideo();
-            } catch (err) {
-                console.warn('YouTube start failed:', err);
-            }
+            player.setVolume(100);
+            player.setShuffle(true);
+            player.cuePlaylist({
+                list: 'PLlnkmUosVw9jSfM6Qo3j_m-KBQz_-6fSF',
+                listType: 'playlist',
+                index: Math.floor(Math.random() * 50)
+            });
+            player.playVideo();
         }
     }
 
     async function initVisualsAndAudio() {
         if (initialized) return;
         initialized = true;
-
         overlay.style.display = 'none';
 
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -304,10 +327,11 @@
             source.connect(analyser);
             dataArray = new Uint8Array(analyser.frequencyBinCount);
         } catch (err) {
-            console.warn('Mic access denied — using fallback animation amplitude');
+            console.warn('Mic denied — fallback animation');
         }
     }
 
+    // === THREE.JS SCENE ===
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -316,12 +340,191 @@
 
     renderer.xr.enabled = true;
 
+    // Controls
+    let theta = 1.2;
+    let phi = 1.0;
+    let camDistance = 38;
+    let isDragging = false;
+    let prevX = 0, prevY = 0;
+    let prevPinch = 0;
+
+    function updateCamera() {
+        const x = camDistance * Math.sin(phi) * Math.cos(theta);
+        const z = camDistance * Math.sin(phi) * Math.sin(theta);
+        const y = camDistance * Math.cos(phi);
+        camera.position.set(x, y, z);
+        camera.lookAt(0, 0, 0);
+    }
+
+    // Mouse / Touch controls
+    renderer.domElement.addEventListener('mousedown', e => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+    renderer.domElement.addEventListener('mouseup', () => isDragging = false);
+    renderer.domElement.addEventListener('mousemove', e => {
+        if (!isDragging || renderer.xr.isPresenting()) return;
+        theta -= (e.clientX - prevX) * 0.005;
+        phi -= (e.clientY - prevY) * 0.005;
+        phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+        prevX = e.clientX; prevY = e.clientY;
+        updateCamera();
+    });
+
+    renderer.domElement.addEventListener('wheel', e => {
+        camDistance = Math.max(10, Math.min(80, camDistance + e.deltaY * 0.05));
+        updateCamera();
+    });
+
+    // Touch
+    renderer.domElement.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            prevX = e.touches[0].clientX;
+            prevY = e.touches[0].clientY;
+        } else if (e.touches.length === 2) {
+            prevPinch = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        }
+    });
+    renderer.domElement.addEventListener('touchend', () => { isDragging = false; prevPinch = 0; });
+    renderer.domElement.addEventListener('touchmove', e => {
+        if (renderer.xr.isPresenting()) return;
+        if (e.touches.length === 1 && isDragging) {
+            theta -= (e.touches[0].clientX - prevX) * 0.005;
+            phi -= (e.touches[0].clientY - prevY) * 0.005;
+            phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+            prevX = e.touches[0].clientX;
+            prevY = e.touches[0].clientY;
+            updateCamera();
+        } else if (e.touches.length === 2) {
+            const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            if (prevPinch) camDistance = Math.max(10, Math.min(80, camDistance - (d - prevPinch) * 0.15));
+            prevPinch = d;
+            updateCamera();
+        }
+    });
+
+    // Raycaster for planet clicks
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    function onCanvasClick(e) {
+        if (renderer.xr.isPresenting()) return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(planets.map(p => p.mesh));
+        if (intersects.length) {
+            const hit = intersects[0].object;
+            const planet = planets.find(p => p.mesh === hit);
+            if (planet) showHolo(planet);
+        }
+    }
+    renderer.domElement.addEventListener('click', onCanvasClick);
+
+    // Solar System
+    const solarGroup = new THREE.Group();
+    scene.add(solarGroup);
+
+    // Starfield (audio reactive)
+    const starCount = 15000;
+    const positions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i += 3) {
+        positions[i]     = THREE.MathUtils.randFloatSpread(320);
+        positions[i + 1] = THREE.MathUtils.randFloatSpread(320);
+        positions[i + 2] = THREE.MathUtils.randFloatSpread(320);
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xdddddd, size: 0.15, transparent: true, opacity: 0.85 });
+    const starField = new THREE.Points(starGeo, starMat);
+    scene.add(starField);
+
+    // Sun
+    const sunGeo = new THREE.SphereGeometry(2.2, 64, 64);
+    const sunMat = new THREE.MeshPhongMaterial({ color: 0xffeeaa, emissive: 0xffaa00, emissiveIntensity: 1.4 });
+    const sun = new THREE.Mesh(sunGeo, sunMat);
+    solarGroup.add(sun);
+    const sunLight = new THREE.PointLight(0xffdd99, 4, 0);
+    scene.add(sunLight);
+
+    // Planet data
+    const planetInfo = [
+        {name: "Mercury", r: 0.45, dist: 5.2, speed: 0.085, col: 0xaaaaaa, facts: "Smallest planet • Closest to the Sun • No atmosphere • Extreme temperatures (-290°F to 800°F)"},
+        {name: "Venus",   r: 0.75, dist: 7.8, speed: 0.052, col: 0xffcc77, facts: "Hottest planet • Toxic thick atmosphere • Rotates backwards • Surface pressure 92× Earth"},
+        {name: "Earth",   r: 0.85, dist: 10.5, speed: 0.032, col: 0x4488ff, facts: "Our home • 71% water • Only planet with confirmed life • Perfect distance from Sun"},
+        {name: "Mars",    r: 0.65, dist: 14,   speed: 0.021, col: 0xff5555, facts: "The Red Planet • Olympus Mons (tallest mountain) • Evidence of ancient rivers • Future colony candidate"},
+        {name: "Jupiter", r: 1.85, dist: 19,   speed: 0.009, col: 0xffaa44, facts: "Largest planet • Great Red Spot storm • 95+ moons • Strongest magnetic field"},
+        {name: "Saturn",  r: 1.55, dist: 25,   speed: 0.0055,col: 0xffeecc, facts: "Iconic rings • Least dense planet (floats on water) • 146+ moons"},
+        {name: "Uranus",  r: 1.25, dist: 30,   speed: 0.0032,col: 0x88ffff, facts: "Ice giant • Rotates on its side • Faint rings • Coldest planetary atmosphere"},
+        {name: "Neptune", r: 1.25, dist: 34.5, speed: 0.0021,col: 0x4466ff, facts: "Windiest planet (1,500 mph) • Deep blue methane • 16 moons"}
+    ];
+
+    const planets = [];
+    const labels = [];
+
+    const orbitMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.18 });
+
+    planetInfo.forEach(info => {
+        // Planet
+        const geo = new THREE.SphereGeometry(info.r, 32, 32);
+        const mat = new THREE.MeshPhongMaterial({ color: info.col, emissive: info.col, emissiveIntensity: 0.25 });
+        const mesh = new THREE.Mesh(geo, mat);
+        solarGroup.add(mesh);
+
+        // Orbit line
+        const orbitPoints = [];
+        for (let a = 0; a <= Math.PI * 2; a += 0.04) {
+            orbitPoints.push(new THREE.Vector3(Math.cos(a) * info.dist, 0, Math.sin(a) * info.dist));
+        }
+        const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+        const orbitLine = new THREE.Line(orbitGeo, orbitMat);
+        solarGroup.add(orbitLine);
+
+        // Label
+        const canvas = document.createElement('canvas');
+        canvas.width = 256; canvas.height = 96;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#00ffff';
+        ctx.font = 'bold 42px Arial';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 12;
+        ctx.fillText(info.name, 128, 62);
+        const tex = new THREE.CanvasTexture(canvas);
+        const spriteMat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
+        const labelSprite = new THREE.Sprite(spriteMat);
+        labelSprite.scale.set(5.5, 2.1, 1);
+        scene.add(labelSprite);
+
+        planets.push({
+            mesh: mesh,
+            distance: info.dist,
+            speed: info.speed,
+            radius: info.r,
+            name: info.name,
+            facts: info.facts,
+            label: labelSprite
+        });
+        labels.push(labelSprite);
+    });
+
+    // Saturn ring
+    const saturnIndex = 5;
+    const ringGeo = new THREE.TorusGeometry(planets[saturnIndex].radius * 2.35, 0.18, 4, 64);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xffeecc, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 2;
+    planets[saturnIndex].mesh.add(ring);
+
+    // VR
     let xrButton = null;
+    let gripped = false;
+    const gripStartQuat = new THREE.Quaternion();
+    const solarStartQuat = new THREE.Quaternion();
+    const autoSpinQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), 0.0008);
 
     async function checkForXR() {
         if (!('xr' in navigator)) return;
-        const supported = await navigator.xr.isSessionSupported('immersive-vr');
-        if (supported) {
+        if (await navigator.xr.isSessionSupported('immersive-vr')) {
             xrButton = document.createElement('button');
             xrButton.id = 'xr-button';
             xrButton.className = 'nav-btn';
@@ -332,139 +535,110 @@
     }
 
     window.enterVRSession = async () => {
-        if (state === 'promo') {
-            switchToInitialize();
-        }
-        await initVisualsAndAudio(); // ensure audio + mic
+        if (state === 'promo') switchToInitialize();
+        await initVisualsAndAudio();
 
         try {
-            const session = await navigator.xr.requestSession('immersive-vr', {
-                optionalFeatures: ['local-floor']
-            });
+            const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] });
             renderer.xr.setReferenceSpaceType('local-floor');
             session.addEventListener('end', onSessionEnded);
             await renderer.xr.setSession(session);
-
-            nodeGroup.position.set(0, 1.6, -3.5);
-            nodeGroup.scale.setScalar(2.8);
-        } catch (error) {
-            console.error('VR session failed:', error);
+        } catch (err) {
+            console.error(err);
             if (xrButton) xrButton.textContent = 'VR UNAVAILABLE';
         }
     };
 
     function onSessionEnded() {
         if (xrButton) xrButton.textContent = '🌌 RE-ENTER VR IMMERSION';
-        nodeGroup.position.set(0, 0, 0);
-        nodeGroup.scale.setScalar(1);
-        nodeGroup.quaternion.set(0, 0, 0, 1);
+        solarGroup.quaternion.set(0,0,0,1);
+        updateCamera();
     }
 
     const rightController = renderer.xr.getController(1);
     scene.add(rightController);
 
-    let gripped = false;
-    const gripStartQuat = new THREE.Quaternion();
-    const nodeGroupStartQuat = new THREE.Quaternion();
-    const autoSpinQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.002);
-
     rightController.addEventListener('squeezestart', () => {
         gripped = true;
         gripStartQuat.copy(rightController.quaternion);
-        nodeGroupStartQuat.copy(nodeGroup.quaternion);
+        solarStartQuat.copy(solarGroup.quaternion);
     });
-
     rightController.addEventListener('squeezeend', () => gripped = false);
 
-    // 4D tesseract setup (unchanged)
-    const vertices4D = [];
-    for (let i = 0; i < 16; i++) {
-        vertices4D.push([i&1?1:-1, i&2?1:-1, i&4?1:-1, i&8?1:-1]);
-    }
+    // Holoframe
+    window.showHolo = (planet) => {
+        document.getElementById('holo-title').textContent = planet.name;
+        document.getElementById('holo-facts').textContent = planet.facts;
+        document.getElementById('holoframe').style.display = 'block';
+    };
+    window.closeHolo = () => {
+        document.getElementById('holoframe').style.display = 'none';
+    };
 
-    const nodes = [];
-    const nodeGroup = new THREE.Group();
-    const geometry = new THREE.SphereGeometry(0.06, 16, 16);
-
-    vertices4D.forEach(() => {
-        const material = new THREE.MeshPhongMaterial({ color: 0x00ffff, emissive: 0x00ffff });
-        const node = new THREE.Mesh(geometry, material);
-        nodes.push(node);
-        nodeGroup.add(node);
-    });
-    scene.add(nodeGroup);
-    scene.add(new THREE.PointLight(0xffffff, 1, 100));
-
-    const lines = [];
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 });
-    for (let i = 0; i < 16; i++) {
-        for (let j = i + 1; j < 16; j++) {
-            let diff = 0;
-            for (let k = 0; k < 4; k++) if (vertices4D[i][k] !== vertices4D[j][k]) diff++;
-            if (diff === 1) {
-                const line = new THREE.Line(new THREE.BufferGeometry(), lineMat);
-                lines.push({ line, i, j });
-                scene.add(line);
-            }
-        }
-    }
-
-    camera.position.z = 4;
-    let angle = 0;
+    // Animation
+    let simTime = 0;
 
     function animate() {
-        renderer.setAnimationLoop(animate);
-
-        let bassTrigger = 0.1; // fallback
+        let bass = 0.15;
         if (analyser) {
             analyser.getByteFrequencyData(dataArray);
-            bassTrigger = dataArray[2] / 255;
+            for (let i = 0; i < 12; i++) bass += dataArray[i];
+            bass = (bass / 12 / 255) || 0.15;
         }
 
-        angle += 0.005 + (bassTrigger * 0.04);
+        simTime += 0.016 + bass * 0.012;
 
-        const cosA = Math.cos(angle);
-        const sinA = Math.sin(angle);
+        // Audio-reactive starfield
+        starField.material.size = 0.13 + bass * 1.35;
 
-        const projected3D = vertices4D.map(v => {
-            let x = v[0], y = v[1], z = v[2], w = v[3];
-            let x1 = x * cosA - w * sinA;
-            let w1 = x * sinA + w * cosA;
-            let y2 = y * cosA - w1 * sinA;
-            let w2 = y * sinA + w1 * cosA;
-            const factor = 1 / (3.0 + (bassTrigger * 2) - w2);
-            return new THREE.Vector3(x1 * factor, y2 * factor, z * factor);
+        // Sun pulse
+        sun.scale.setScalar(1 + bass * 0.18);
+
+        // Orbit planets
+        planets.forEach(p => {
+            const ang = simTime * p.speed;
+            p.mesh.position.x = Math.cos(ang) * p.distance;
+            p.mesh.position.z = Math.sin(ang) * p.distance;
+            p.mesh.position.y = Math.sin(ang * 1.4) * 0.9;
+            p.mesh.rotation.y = simTime * 1.2;
+
+            // Label
+            p.label.position.set(
+                p.mesh.position.x,
+                p.mesh.position.y + p.radius + 2.8,
+                p.mesh.position.z
+            );
+            p.label.lookAt(camera.position);
         });
 
-        nodes.forEach((node, i) => {
-            node.position.copy(projected3D[i]);
-            const s = 1 + ((analyser ? dataArray[i % 16] : 80) / 255) * 4;
-            node.scale.set(s, s, s);
-        });
+        sun.rotation.y = simTime * 0.25;
 
-        lines.forEach(({ line, i, j }) => {
-            line.geometry.setFromPoints([projected3D[i], projected3D[j]]);
-        });
-
+        // VR grab
         if (!gripped) {
-            nodeGroup.quaternion.multiply(autoSpinQuat);
+            solarGroup.quaternion.multiply(autoSpinQuat);
         } else if (rightController) {
             const deltaQuat = gripStartQuat.clone().invert().multiply(rightController.quaternion);
-            nodeGroup.quaternion.copy(nodeGroupStartQuat).multiply(deltaQuat);
+            solarGroup.quaternion.copy(solarStartQuat).multiply(deltaQuat);
         }
+
+        if (!renderer.xr.isPresenting()) updateCamera();
 
         renderer.render(scene, camera);
     }
 
-    // Kick off
-    checkForXR();
-    animate();
+    renderer.setAnimationLoop(animate);
 
+    // Resize
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        updateCamera();
     });
+
+    // Initial camera + XR check
+    updateCamera();
+    checkForXR();
 </script>
 </body>
 </html>
