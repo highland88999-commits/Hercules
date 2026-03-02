@@ -1,644 +1,230 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Nexus Vortex | 4D Symbiote Experience</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Vortex | Solar System Explorer</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
-        
-        #ui-layer {
-            position: absolute;
-            bottom: 40px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 50px;
-            z-index: 100;
-            pointer-events: none;
-        }
+        canvas { display: block; }
 
-        .nav-btn {
-            pointer-events: auto;
-            padding: 12px 30px;
-            background: rgba(0, 255, 255, 0.05);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            color: #00ffff;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-            font-weight: bold;
-        }
-
-        .nav-btn:hover {
-            background: rgba(0, 255, 255, 0.2);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
-            transform: translateY(-2px);
-        }
-
-        #overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); color: #00ffff;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1000; cursor: pointer; text-align: center;
-        }
-
-        #promo-carousel {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .promo-slide {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            opacity: 0;
-            transition: opacity 1.5s ease;
-            pointer-events: none;
-        }
-
-        .promo-slide.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .promo-slide video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            cursor: pointer;
-        }
-
-        #promo-nav {
-            position: absolute;
-            bottom: 200px;
-            width: 100%;
-            text-align: center;
-            z-index: 1001;
-        }
-
-        #continue-nav {
-            position: absolute;
-            bottom: 120px;
-            width: 100%;
-            text-align: center;
-            z-index: 1001;
-        }
-
-        #promo-nav .nav-btn,
-        #continue-nav .nav-btn {
-            font-size: 1.8vw;
-            padding: 20px 60px;
-        }
-
-        #overlay-instruction {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 1.5vw;
-            opacity: 0.8;
-        }
-
-        #initialize-content {
-            display: none;
-        }
-
-        #youtube-player {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        #xr-button {
-            position: absolute;
-            top: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1100;
-            font-size: 1.6em;
-            padding: 20px 55px;
-        }
-
-        /* Glass Holoframe */
+        /* Glass Holoframe Overlay */
         #holoframe {
-            display: none;
-            position: absolute;
+            position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85%;
-            max-width: 520px;
-            background: rgba(10, 30, 50, 0.75);
-            backdrop-filter: blur(16px);
-            border: 2px solid rgba(0, 255, 255, 0.6);
-            border-radius: 18px;
-            padding: 28px 32px;
-            color: #00ffff;
-            text-align: left;
-            box-shadow: 0 0 60px rgba(0, 255, 255, 0.6);
-            z-index: 2000;
-            font-size: 1.1em;
-            line-height: 1.5;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 400px;
+            max-height: 70vh;
+            background: rgba(0, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            color: #fff;
+            padding: 30px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.4s ease;
+            overflow-y: auto;
         }
 
-        #holo-title {
-            margin: 0 0 16px;
-            text-align: center;
-            font-size: 1.8em;
-            text-shadow: 0 0 10px #00ffff;
+        #holoframe.active {
+            display: flex;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
         }
 
-        #holo-facts {
-            margin: 0 0 24px;
-            white-space: pre-line;
-            opacity: 0.95;
-        }
-
-        #holoframe button {
-            background: transparent;
+        #holoframe h2 { color: #00ffff; margin-top: 0; border-bottom: 1px solid #00ffff; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+        #holoframe p { line-height: 1.6; font-size: 0.95rem; }
+        
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
             border: 1px solid #00ffff;
             color: #00ffff;
-            padding: 10px 28px;
-            border-radius: 999px;
             cursor: pointer;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
+            padding: 5px 10px;
+            border-radius: 5px;
         }
 
-        #holoframe button:hover {
-            background: rgba(0, 255, 255, 0.1);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        .instruction {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(0, 255, 255, 0.5);
+            pointer-events: none;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 2px;
         }
     </style>
 </head>
 <body>
 
-    <div id="overlay">
-        <div id="promo-carousel">
-            <div class="promo-slide active">
-                <video src="https://files.catbox.moe/7r5z5p.mp4" muted playsinline loop autoplay onclick="claimCredits()"></video>
-            </div>
-            <div class="promo-slide">
-                <video src="https://files.catbox.moe/mzl0pk.mp4" muted playsinline loop autoplay onclick="claimCredits()"></video>
-            </div>
-            <div class="promo-slide">
-                <video src="https://files.catbox.moe/ym9cua.mp4" muted playsinline loop autoplay onclick="claimCredits()"></video>
-            </div>
-        </div>
-
-        <div id="promo-nav">
-            <button class="nav-btn" onclick="claimCredits()">
-                SUBSCRIBE & CLAIM 300 CREDITS NOW!
-            </button>
-        </div>
-
-        <div id="continue-nav">
-            <button class="nav-btn" onclick="switchToInitialize()">
-                CONTINUE TO NEXUS VORTEX »
-            </button>
-        </div>
-
-        <div id="initialize-content">
-            <h1>INITIALIZE NEXUS STREAM</h1>
-            <p>(Click anywhere to sync symbiotes)</p>
-        </div>
-
-        <p id="overlay-instruction">(Click on video or subscribe button to claim credits, or continue to experience)</p>
-    </div>
-
-    <div id="ui-layer">
-        <button class="nav-btn" onclick="resetToLanding()">« BACK TO ENTRY</button>
-        <button class="nav-btn" onclick="claimCredits()">Claim 300 Credits »</button>
-    </div>
-
-    <div id="youtube-player"></div>
-
-    <!-- Glass Holoframe -->
     <div id="holoframe">
-        <h2 id="holo-title"></h2>
-        <p id="holo-facts"></p>
-        <button onclick="closeHolo()">CLOSE HOLOFRAME</button>
+        <button class="close-btn" onclick="closeHolo()">EXIT</button>
+        <h2 id="planet-name">Planet Name</h2>
+        <div id="planet-info"></div>
     </div>
 
-<script type="module">
-    import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
+    <div class="instruction">Swipe to Orbit • Scroll to Zoom • Click Planets for Data</div>
 
-    // YouTube
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    document.head.appendChild(tag);
-
-    let player;
-    let isPlayerReady = false;
-
-    window.onYouTubeIframeAPIReady = () => {
-        player = new YT.Player('youtube-player', {
-            height: '1',
-            width: '1',
-            playerVars: { 'playsinline': 1, 'controls': 0, 'showinfo': 0, 'rel': 0, 'modestbranding': 1 },
-            events: { 'onReady': onPlayerReady }
-        });
-    };
-
-    function onPlayerReady() {
-        isPlayerReady = true;
-    }
-
-    // Navigation
-    window.resetToLanding = () => window.location.reload();
-    window.claimCredits = () => window.open('https://openartai.pxf.io/c/6240385/3321097/38572', '_blank');
-
-    // Promo videos – infinite loop
-    const promoSlides = document.querySelectorAll('.promo-slide');
-    const videos = document.querySelectorAll('.promo-slide video');
-    let currentPromo = 0;
-
-    function cyclePromo() {
-        promoSlides.forEach(s => s.classList.remove('active'));
-        promoSlides[currentPromo].classList.add('active');
-        currentPromo = (currentPromo + 1) % promoSlides.length;
-    }
-
-    videos.forEach(v => v.addEventListener('ended', () => {
-        v.pause();
-        cyclePromo();
-        videos[currentPromo].currentTime = 0;
-        videos[currentPromo].play().catch(() => {});
-    }));
-
-    if (videos.length) videos[0].play().catch(() => {});
-
-    // State
-    let state = 'promo';
-
-    window.switchToInitialize = () => {
-        if (state !== 'promo') return;
-        state = 'initialize';
-        document.getElementById('promo-carousel').style.display = 'none';
-        document.getElementById('promo-nav').style.display = 'none';
-        document.getElementById('continue-nav').style.display = 'none';
-        document.getElementById('initialize-content').style.display = 'block';
-        document.getElementById('overlay-instruction').textContent = '(Click anywhere to sync symbiotes)';
-        startAudioExperience();
-    };
-
-    const overlay = document.getElementById('overlay');
-    overlay.addEventListener('click', (e) => {
-        if (state === 'initialize' && e.target.tagName !== 'BUTTON') {
-            initVisualsAndAudio();
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
         }
-    });
+    </script>
 
-    // Audio
-    let analyser, dataArray, audioContext;
-    let initialized = false;
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-    async function startAudioExperience() {
-        if (isPlayerReady && player) {
-            player.setVolume(100);
-            player.setShuffle(true);
-            player.cuePlaylist({
-                list: 'PLlnkmUosVw9jSfM6Qo3j_m-KBQz_-6fSF',
-                listType: 'playlist',
-                index: Math.floor(Math.random() * 50)
-            });
-            player.playVideo();
-        }
-    }
+        // --- NASA DATA ---
+        const solarData = {
+            "Sun": "The Sun is a 4.5 billion-year-old star – a hot glowing ball of hydrogen and helium at the center of our solar system. It is roughly 93 million miles from Earth.",
+            "Mercury": "The smallest planet in our solar system and closest to the Sun—is only slightly larger than Earth's Moon. It has no moons.",
+            "Venus": "Spinning in the opposite direction from most planets, Venus is the hottest planet, with a surface temperature hot enough to melt lead.",
+            "Earth": "Our home planet is the only place we know of so far that’s inhabited by living things. It is the only world in our solar system with liquid water on the surface.",
+            "Mars": "Mars is a dusty, cold, desert world with a very thin atmosphere. There is strong evidence Mars was—billions of years ago—wetter and warmer, with a thicker atmosphere.",
+            "Jupiter": "Jupiter is more than twice as massive than the other planets of our solar system combined. The giant planet's Great Red spot is a centuries-old storm bigger than Earth.",
+            "Saturn": "Adorned with a dazzling, complex system of icy rings, Saturn is unique in our solar system. The other giant planets have rings, but none are as spectacular as Saturn's.",
+            "Uranus": "Uranus—seventh planet from the Sun—rotates at a nearly 90-degree angle from the plane of its orbit. This unique tilt makes Uranus appear to spin on its side.",
+            "Neptune": "Neptune—the eighth and most distant major planet orbiting our Sun—is dark, cold and whipped by supersonic winds. It was the first planet located through mathematical calculations."
+        };
 
-    async function initVisualsAndAudio() {
-        if (initialized) return;
-        initialized = true;
-        overlay.style.display = 'none';
-
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const source = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            source.connect(analyser);
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-        } catch (err) {
-            console.warn('Mic denied — fallback animation');
-        }
-    }
-
-    // === THREE.JS SCENE ===
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    renderer.xr.enabled = true;
-
-    // Controls
-    let theta = 1.2;
-    let phi = 1.0;
-    let camDistance = 38;
-    let isDragging = false;
-    let prevX = 0, prevY = 0;
-    let prevPinch = 0;
-
-    function updateCamera() {
-        const x = camDistance * Math.sin(phi) * Math.cos(theta);
-        const z = camDistance * Math.sin(phi) * Math.sin(theta);
-        const y = camDistance * Math.cos(phi);
-        camera.position.set(x, y, z);
-        camera.lookAt(0, 0, 0);
-    }
-
-    // Mouse / Touch controls
-    renderer.domElement.addEventListener('mousedown', e => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
-    renderer.domElement.addEventListener('mouseup', () => isDragging = false);
-    renderer.domElement.addEventListener('mousemove', e => {
-        if (!isDragging || renderer.xr.isPresenting()) return;
-        theta -= (e.clientX - prevX) * 0.005;
-        phi -= (e.clientY - prevY) * 0.005;
-        phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
-        prevX = e.clientX; prevY = e.clientY;
-        updateCamera();
-    });
-
-    renderer.domElement.addEventListener('wheel', e => {
-        camDistance = Math.max(10, Math.min(80, camDistance + e.deltaY * 0.05));
-        updateCamera();
-    });
-
-    // Touch
-    renderer.domElement.addEventListener('touchstart', e => {
-        if (e.touches.length === 1) {
-            isDragging = true;
-            prevX = e.touches[0].clientX;
-            prevY = e.touches[0].clientY;
-        } else if (e.touches.length === 2) {
-            prevPinch = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-        }
-    });
-    renderer.domElement.addEventListener('touchend', () => { isDragging = false; prevPinch = 0; });
-    renderer.domElement.addEventListener('touchmove', e => {
-        if (renderer.xr.isPresenting()) return;
-        if (e.touches.length === 1 && isDragging) {
-            theta -= (e.touches[0].clientX - prevX) * 0.005;
-            phi -= (e.touches[0].clientY - prevY) * 0.005;
-            phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
-            prevX = e.touches[0].clientX;
-            prevY = e.touches[0].clientY;
-            updateCamera();
-        } else if (e.touches.length === 2) {
-            const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-            if (prevPinch) camDistance = Math.max(10, Math.min(80, camDistance - (d - prevPinch) * 0.15));
-            prevPinch = d;
-            updateCamera();
-        }
-    });
-
-    // Raycaster for planet clicks
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    function onCanvasClick(e) {
-        if (renderer.xr.isPresenting()) return;
-        const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(planets.map(p => p.mesh));
-        if (intersects.length) {
-            const hit = intersects[0].object;
-            const planet = planets.find(p => p.mesh === hit);
-            if (planet) showHolo(planet);
-        }
-    }
-    renderer.domElement.addEventListener('click', onCanvasClick);
-
-    // Solar System
-    const solarGroup = new THREE.Group();
-    scene.add(solarGroup);
-
-    // Starfield (audio reactive)
-    const starCount = 15000;
-    const positions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount * 3; i += 3) {
-        positions[i]     = THREE.MathUtils.randFloatSpread(320);
-        positions[i + 1] = THREE.MathUtils.randFloatSpread(320);
-        positions[i + 2] = THREE.MathUtils.randFloatSpread(320);
-    }
-    const starGeo = new THREE.BufferGeometry();
-    starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const starMat = new THREE.PointsMaterial({ color: 0xdddddd, size: 0.15, transparent: true, opacity: 0.85 });
-    const starField = new THREE.Points(starGeo, starMat);
-    scene.add(starField);
-
-    // Sun
-    const sunGeo = new THREE.SphereGeometry(2.2, 64, 64);
-    const sunMat = new THREE.MeshPhongMaterial({ color: 0xffeeaa, emissive: 0xffaa00, emissiveIntensity: 1.4 });
-    const sun = new THREE.Mesh(sunGeo, sunMat);
-    solarGroup.add(sun);
-    const sunLight = new THREE.PointLight(0xffdd99, 4, 0);
-    scene.add(sunLight);
-
-    // Planet data
-    const planetInfo = [
-        {name: "Mercury", r: 0.45, dist: 5.2, speed: 0.085, col: 0xaaaaaa, facts: "Smallest planet • Closest to the Sun • No atmosphere • Extreme temperatures (-290°F to 800°F)"},
-        {name: "Venus",   r: 0.75, dist: 7.8, speed: 0.052, col: 0xffcc77, facts: "Hottest planet • Toxic thick atmosphere • Rotates backwards • Surface pressure 92× Earth"},
-        {name: "Earth",   r: 0.85, dist: 10.5, speed: 0.032, col: 0x4488ff, facts: "Our home • 71% water • Only planet with confirmed life • Perfect distance from Sun"},
-        {name: "Mars",    r: 0.65, dist: 14,   speed: 0.021, col: 0xff5555, facts: "The Red Planet • Olympus Mons (tallest mountain) • Evidence of ancient rivers • Future colony candidate"},
-        {name: "Jupiter", r: 1.85, dist: 19,   speed: 0.009, col: 0xffaa44, facts: "Largest planet • Great Red Spot storm • 95+ moons • Strongest magnetic field"},
-        {name: "Saturn",  r: 1.55, dist: 25,   speed: 0.0055,col: 0xffeecc, facts: "Iconic rings • Least dense planet (floats on water) • 146+ moons"},
-        {name: "Uranus",  r: 1.25, dist: 30,   speed: 0.0032,col: 0x88ffff, facts: "Ice giant • Rotates on its side • Faint rings • Coldest planetary atmosphere"},
-        {name: "Neptune", r: 1.25, dist: 34.5, speed: 0.0021,col: 0x4466ff, facts: "Windiest planet (1,500 mph) • Deep blue methane • 16 moons"}
-    ];
-
-    const planets = [];
-    const labels = [];
-
-    const orbitMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.18 });
-
-    planetInfo.forEach(info => {
-        // Planet
-        const geo = new THREE.SphereGeometry(info.r, 32, 32);
-        const mat = new THREE.MeshPhongMaterial({ color: info.col, emissive: info.col, emissiveIntensity: 0.25 });
-        const mesh = new THREE.Mesh(geo, mat);
-        solarGroup.add(mesh);
-
-        // Orbit line
-        const orbitPoints = [];
-        for (let a = 0; a <= Math.PI * 2; a += 0.04) {
-            orbitPoints.push(new THREE.Vector3(Math.cos(a) * info.dist, 0, Math.sin(a) * info.dist));
-        }
-        const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-        const orbitLine = new THREE.Line(orbitGeo, orbitMat);
-        solarGroup.add(orbitLine);
-
-        // Label
-        const canvas = document.createElement('canvas');
-        canvas.width = 256; canvas.height = 96;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#00ffff';
-        ctx.font = 'bold 42px Arial';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 12;
-        ctx.fillText(info.name, 128, 62);
-        const tex = new THREE.CanvasTexture(canvas);
-        const spriteMat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
-        const labelSprite = new THREE.Sprite(spriteMat);
-        labelSprite.scale.set(5.5, 2.1, 1);
-        scene.add(labelSprite);
-
-        planets.push({
-            mesh: mesh,
-            distance: info.dist,
-            speed: info.speed,
-            radius: info.r,
-            name: info.name,
-            facts: info.facts,
-            label: labelSprite
-        });
-        labels.push(labelSprite);
-    });
-
-    // Saturn ring
-    const saturnIndex = 5;
-    const ringGeo = new THREE.TorusGeometry(planets[saturnIndex].radius * 2.35, 0.18, 4, 64);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0xffeecc, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.rotation.x = Math.PI / 2;
-    planets[saturnIndex].mesh.add(ring);
-
-    // VR
-    let xrButton = null;
-    let gripped = false;
-    const gripStartQuat = new THREE.Quaternion();
-    const solarStartQuat = new THREE.Quaternion();
-    const autoSpinQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), 0.0008);
-
-    async function checkForXR() {
-        if (!('xr' in navigator)) return;
-        if (await navigator.xr.isSessionSupported('immersive-vr')) {
-            xrButton = document.createElement('button');
-            xrButton.id = 'xr-button';
-            xrButton.className = 'nav-btn';
-            xrButton.textContent = '🌌 ENTER VR IMMERSION';
-            document.body.appendChild(xrButton);
-            xrButton.onclick = enterVRSession;
-        }
-    }
-
-    window.enterVRSession = async () => {
-        if (state === 'promo') switchToInitialize();
-        await initVisualsAndAudio();
-
-        try {
-            const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] });
-            renderer.xr.setReferenceSpaceType('local-floor');
-            session.addEventListener('end', onSessionEnded);
-            await renderer.xr.setSession(session);
-        } catch (err) {
-            console.error(err);
-            if (xrButton) xrButton.textContent = 'VR UNAVAILABLE';
-        }
-    };
-
-    function onSessionEnded() {
-        if (xrButton) xrButton.textContent = '🌌 RE-ENTER VR IMMERSION';
-        solarGroup.quaternion.set(0,0,0,1);
-        updateCamera();
-    }
-
-    const rightController = renderer.xr.getController(1);
-    scene.add(rightController);
-
-    rightController.addEventListener('squeezestart', () => {
-        gripped = true;
-        gripStartQuat.copy(rightController.quaternion);
-        solarStartQuat.copy(solarGroup.quaternion);
-    });
-    rightController.addEventListener('squeezeend', () => gripped = false);
-
-    // Holoframe
-    window.showHolo = (planet) => {
-        document.getElementById('holo-title').textContent = planet.name;
-        document.getElementById('holo-facts').textContent = planet.facts;
-        document.getElementById('holoframe').style.display = 'block';
-    };
-    window.closeHolo = () => {
-        document.getElementById('holoframe').style.display = 'none';
-    };
-
-    // Animation
-    let simTime = 0;
-
-    function animate() {
-        let bass = 0.15;
-        if (analyser) {
-            analyser.getByteFrequencyData(dataArray);
-            for (let i = 0; i < 12; i++) bass += dataArray[i];
-            bass = (bass / 12 / 255) || 0.15;
-        }
-
-        simTime += 0.016 + bass * 0.012;
-
-        // Audio-reactive starfield
-        starField.material.size = 0.13 + bass * 1.35;
-
-        // Sun pulse
-        sun.scale.setScalar(1 + bass * 0.18);
-
-        // Orbit planets
-        planets.forEach(p => {
-            const ang = simTime * p.speed;
-            p.mesh.position.x = Math.cos(ang) * p.distance;
-            p.mesh.position.z = Math.sin(ang) * p.distance;
-            p.mesh.position.y = Math.sin(ang * 1.4) * 0.9;
-            p.mesh.rotation.y = simTime * 1.2;
-
-            // Label
-            p.label.position.set(
-                p.mesh.position.x,
-                p.mesh.position.y + p.radius + 2.8,
-                p.mesh.position.z
-            );
-            p.label.lookAt(camera.position);
-        });
-
-        sun.rotation.y = simTime * 0.25;
-
-        // VR grab
-        if (!gripped) {
-            solarGroup.quaternion.multiply(autoSpinQuat);
-        } else if (rightController) {
-            const deltaQuat = gripStartQuat.clone().invert().multiply(rightController.quaternion);
-            solarGroup.quaternion.copy(solarStartQuat).multiply(deltaQuat);
-        }
-
-        if (!renderer.xr.isPresenting()) updateCamera();
-
-        renderer.render(scene, camera);
-    }
-
-    renderer.setAnimationLoop(animate);
-
-    // Resize
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+        // --- SCENE SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        updateCamera();
-    });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
 
-    // Initial camera + XR check
-    updateCamera();
-    checkForXR();
-</script>
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.minDistance = 5;
+        controls.maxDistance = 2000;
+
+        // --- LIGHTING ---
+        const sunLight = new THREE.PointLight(0xffffff, 2, 2000);
+        scene.add(sunLight);
+        scene.add(new THREE.AmbientLight(0x404040, 0.5));
+
+        // --- GALAXY BACKGROUND (360 Experience) ---
+        const starGeometry = new THREE.BufferGeometry();
+        const starCount = 15000;
+        const posArray = new Float32Array(starCount * 3);
+        for(let i=0; i < starCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 3000;
+        }
+        starGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const starMaterial = new THREE.PointsMaterial({ size: 0.7, color: 0xffffff });
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
+
+        // --- PLANET GENERATOR ---
+        const planets = [];
+        const createPlanet = (name, size, distance, color) => {
+            const geo = new THREE.SphereGeometry(size, 32, 32);
+            const mat = new THREE.MeshPhongMaterial({ color: color, emissive: color, emissiveIntensity: 0.2 });
+            const mesh = new THREE.Mesh(geo, mat);
+            
+            // Random orbit position
+            const angle = Math.random() * Math.PI * 2;
+            mesh.position.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
+            mesh.userData = { name: name, info: solarData[name] };
+            
+            scene.add(mesh);
+            planets.push(mesh);
+
+            // Orbit Ring
+            const ringGeo = new THREE.RingGeometry(distance, distance + 0.5, 64);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x444444, side: THREE.DoubleSide });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            scene.add(ring);
+            
+            return mesh;
+        };
+
+        // --- INITIALIZE SYSTEM ---
+        const sun = createPlanet("Sun", 15, 0, 0xffcc00);
+        createPlanet("Mercury", 2, 40, 0xaaaaaa);
+        createPlanet("Venus", 4, 70, 0xe3bb76);
+        createPlanet("Earth", 4.2, 100, 0x2233ff);
+        createPlanet("Mars", 3, 130, 0xff4422);
+        createPlanet("Jupiter", 10, 200, 0xffa500);
+        createPlanet("Saturn", 8, 260, 0xdfd195);
+        createPlanet("Uranus", 6, 320, 0x88ddff);
+        createPlanet("Neptune", 6, 380, 0x3366ff);
+
+        camera.position.set(150, 100, 300);
+
+        // --- INTERACTION ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        const onMouseClick = (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(planets);
+
+            if (intersects.length > 0) {
+                const p = intersects[0].object;
+                showHolo(p.userData.name, p.userData.info);
+            } else {
+                closeHolo();
+            }
+        };
+
+        window.showHolo = (name, info) => {
+            document.getElementById('planet-name').innerText = name;
+            document.getElementById('planet-info').innerHTML = `<p>${info}</p>`;
+            document.getElementById('holoframe').classList.add('active');
+        };
+
+        window.closeHolo = () => {
+            document.getElementById('holoframe').classList.remove('active');
+        };
+
+        window.addEventListener('click', onMouseClick);
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Subtle rotation for planets
+            planets.forEach((p, i) => {
+                if(i !== 0) { // Don't rotate sun position
+                    const time = Date.now() * 0.0001 * (10 / (i * 5));
+                    const dist = 40 + (i-1) * 45;
+                    // p.position.x = Math.cos(time) * dist;
+                    // p.position.z = Math.sin(time) * dist;
+                }
+                p.rotation.y += 0.01;
+            });
+
+            stars.rotation.y += 0.0002;
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
 </body>
 </html>
