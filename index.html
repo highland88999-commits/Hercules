@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenArt AI Landing</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        
+        #video-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #youtube-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #click-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 10;
+            opacity: 0;
+        }
+
+        #ui-layer {
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .nav-btn {
+            pointer-events: auto;
+            padding: 12px 30px;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            font-weight: bold;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="video-container">
+        <iframe id="youtube-iframe" src="https://www.youtube.com/embed/sNFHDeiZQ3Q?playlist=mbRZKccBQCA,hvru4BgDUIQ&loop=1&autoplay=1&mute=0&controls=0&rel=0&modestbranding=1&playsinline=1"></iframe>
+        <div id="click-overlay" onclick="window.open('https://openartai.pxf.io/c/6240385/3321097/38572', '_blank');"></div>
+    </div>
+
+    <div id="ui-layer">
+        <button class="nav-btn" onclick="continueToVisuals()">Continue to Visuals »</button>
+    </div>
+
+<script>
+    // Load YouTube IFrame API if needed, but since embedded, not necessary for basic
+
+    window.continueToVisuals = () => {
+        // Assuming the visuals page is named 'nexus.html' or replace with actual URL
+        window.location.href = 'nexus.html'; 
+    };
+</script>
+</body>
+</html>
