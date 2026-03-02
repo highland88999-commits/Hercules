@@ -110,6 +110,17 @@
         #youtube-player {
             display: none;
         }
+
+        /* VR Button */
+        #xr-button {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1100;
+            font-size: 1.6em;
+            padding: 20px 55px;
+        }
     </style>
 </head>
 <body>
@@ -234,8 +245,12 @@
 
     // --- CORE ENGINE ---
     let analyser, dataArray, audioContext;
+    let initialized = false;
 
     async function init() {
+        if (initialized) return;
+        initialized = true;
+
         // Start YouTube playlist (shuffled/random start)
         if (isPlayerReady) {
             player.cuePlaylist({
@@ -258,7 +273,6 @@
         source.connect(analyser);
         dataArray = new Uint8Array(analyser.frequencyBinCount);
         overlay.style.display = 'none';
-        animate();
     }
 
     const scene = new THREE.Scene();
@@ -266,6 +280,83 @@
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+
+    // === WEBXR INTEGRATION ===
+    renderer.xr.enabled = true;
+
+    let xrButton = null;
+    let gripped = false;
+    const gripStartQuat = new THREE.Quaternion();
+    const nodeGroupStartQuat = new THREE.Quaternion();
+    const autoSpinQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.002);
+
+    async function checkForXR() {
+        if (!('xr' in navigator)) return;
+        const supported = await navigator.xr.isSessionSupported('immersive-vr');
+        if (supported) {
+            xrButton = document.createElement('button');
+            xrButton.id = 'xr-button';
+            xrButton.className = 'nav-btn';
+            xrButton.textContent = '🌌 ENTER VR IMMERSION';
+            xrButton.style.position = 'absolute';
+            xrButton.style.top = '40px';
+            xrButton.style.left = '50%';
+            xrButton.style.transform = 'translateX(-50%)';
+            xrButton.style.zIndex = '1100';
+            xrButton.style.fontSize = '1.6em';
+            xrButton.style.padding = '20px 55px';
+            document.body.appendChild(xrButton);
+            xrButton.onclick = enterVRSession;
+        }
+    }
+
+    window.enterVRSession = async () => {
+        if (state === 'promo') {
+            switchToInitialize();
+        }
+        init(); // start music + mic (fires in user-gesture context)
+
+        try {
+            const session = await navigator.xr.requestSession('immersive-vr', {
+                optionalFeatures: ['local-floor']
+            });
+
+            renderer.xr.setReferenceSpaceType('local-floor');
+            session.addEventListener('end', onSessionEnded);
+
+            await renderer.xr.setSession(session);
+
+            // VR-optimized positioning & scale (room-scale feel)
+            nodeGroup.position.set(0, 1.6, -3.5);
+            nodeGroup.scale.setScalar(2.8);
+
+        } catch (error) {
+            console.error('Unable to enter VR session:', error);
+            if (xrButton) xrButton.textContent = 'VR UNAVAILABLE';
+        }
+    };
+
+    function onSessionEnded() {
+        if (xrButton) xrButton.textContent = '🌌 RE-ENTER VR IMMERSION';
+        // reset positioning for desktop continuation
+        nodeGroup.position.set(0, 0, 0);
+        nodeGroup.scale.setScalar(1);
+        nodeGroup.quaternion.set(0, 0, 0, 1);
+    }
+
+    // VR controller setup (right hand squeeze = grab & manipulate vortex in 3D)
+    const rightController = renderer.xr.getController(1);
+    scene.add(rightController);
+
+    rightController.addEventListener('squeezestart', () => {
+        gripped = true;
+        gripStartQuat.copy(rightController.quaternion);
+        nodeGroupStartQuat.copy(nodeGroup.quaternion);
+    });
+
+    rightController.addEventListener('squeezeend', () => {
+        gripped = false;
+    });
 
     const vertices4D = [];
     for (let i = 0; i < 16; i++) {
@@ -303,8 +394,12 @@
     let angle = 0;
 
     function animate() {
-        requestAnimationFrame(animate);
-        if(!analyser) return;
+        if (!analyser) {
+            if (!gripped) nodeGroup.quaternion.multiply(autoSpinQuat);
+            renderer.render(scene, camera);
+            return;
+        }
+
         analyser.getByteFrequencyData(dataArray);
 
         const bassTrigger = dataArray[2] / 255;
@@ -333,9 +428,27 @@
             line.geometry.setFromPoints([projected3D[i], projected3D[j]]);
         });
 
-        nodeGroup.rotation.y += 0.002;
+        // VR-aware spin + manual manipulation
+        if (!gripped) {
+            nodeGroup.quaternion.multiply(autoSpinQuat);
+        } else if (rightController) {
+            const deltaQuat = gripStartQuat.clone().invert().multiply(rightController.quaternion);
+            nodeGroup.quaternion.copy(nodeGroupStartQuat).multiply(deltaQuat);
+        }
+
         renderer.render(scene, camera);
     }
+
+    // Start everything
+    checkForXR();
+    renderer.setAnimationLoop(animate);
+
+    // Resize handler
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 </script>
 </body>
 </html>
