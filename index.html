@@ -28,22 +28,22 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0.9);
-            width: 90%; /* Adaptive width */
-            max-width: 500px;
-            max-height: 80vh; /* Prevents overflow on short screens */
+            width: 90%;
+            max-width: 520px;
+            max-height: 80vh;
             background: rgba(0, 10, 20, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 255, 255, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.4);
             border-radius: 20px;
             color: #fff;
             padding: 25px;
             display: none;
             flex-direction: column;
-            box-shadow: 0 0 40px rgba(0, 255, 255, 0.15);
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.25);
             z-index: 1000;
             opacity: 0;
-            transition: transform 0.3s ease, opacity 0.3s ease;
+            transition: transform 0.4s ease, opacity 0.4s ease;
             box-sizing: border-box;
         }
 
@@ -55,40 +55,54 @@
 
         #holoframe h2 { 
             color: var(--neon-blue); 
-            margin: 0 0 15px 0; 
-            font-size: 1.5rem;
+            margin: 0 0 18px 0; 
+            font-size: 1.6rem;
             text-transform: uppercase; 
             letter-spacing: 3px;
-            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.25);
+            padding-bottom: 12px;
+            text-shadow: 0 0 10px rgba(0,255,255,0.5);
         }
 
         #content-wrapper {
             overflow-y: auto;
-            padding-right: 10px;
+            padding-right: 12px;
+            flex: 1;
             scrollbar-width: thin;
             scrollbar-color: var(--neon-blue) transparent;
         }
 
-        #content-wrapper::-webkit-scrollbar { width: 4px; }
-        #content-wrapper::-webkit-scrollbar-thumb { background: var(--neon-blue); }
+        #content-wrapper::-webkit-scrollbar { width: 5px; }
+        #content-wrapper::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 5px; }
 
-        #planet-info { line-height: 1.7; font-size: 1rem; color: #e0e0e0; }
+        #planet-info { 
+            line-height: 1.7; 
+            font-size: 1.05rem; 
+            color: #e0f0ff; 
+            margin: 0;
+        }
         
         .close-btn {
             align-self: flex-end;
-            background: none;
-            border: 1px solid var(--neon-blue);
+            background: transparent;
+            border: 1.5px solid var(--neon-blue);
             color: var(--neon-blue);
             cursor: pointer;
-            padding: 8px 15px;
-            margin-top: 20px;
-            border-radius: 5px;
-            font-size: 0.8rem;
-            transition: 0.2s;
+            padding: 10px 24px;
+            margin-top: 24px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.25s ease;
         }
 
-        .close-btn:hover { background: var(--neon-blue); color: #000; }
+        .close-btn:hover { 
+            background: var(--neon-blue); 
+            color: #000; 
+            box-shadow: 0 0 20px rgba(0,255,255,0.6);
+        }
 
         /* Bottom UI Label */
         .instruction-box {
@@ -96,33 +110,179 @@
             bottom: 20px;
             width: 100%;
             text-align: center;
-            color: rgba(0, 255, 255, 0.4);
+            color: rgba(0, 255, 255, 0.45);
             pointer-events: none;
             text-transform: uppercase;
-            font-size: 10px;
-            letter-spacing: 2px;
+            font-size: 11px;
+            letter-spacing: 2.5px;
             padding: 0 20px;
             box-sizing: border-box;
         }
 
         @media (max-width: 600px) {
             #holoframe { padding: 20px; }
-            #holoframe h2 { font-size: 1.2rem; }
-            .instruction-box { font-size: 8px; bottom: 10px; }
+            #holoframe h2 { font-size: 1.4rem; }
+            .instruction-box { font-size: 9px; bottom: 12px; }
+        }
+
+        /* Navigation Layer */
+        #ui-layer {
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .nav-btn {
+            pointer-events: auto;
+            padding: 12px 30px;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            font-weight: bold;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); color: #00ffff;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; cursor: pointer; text-align: center;
+        }
+
+        #promo-carousel {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .promo-slide {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            pointer-events: none;
+        }
+
+        .promo-slide.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .promo-slide video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: pointer;
+        }
+
+        #promo-nav {
+            position: absolute;
+            bottom: 200px;
+            width: 100%;
+            text-align: center;
+            z-index: 1001;
+        }
+
+        #continue-nav {
+            position: absolute;
+            bottom: 120px;
+            width: 100%;
+            text-align: center;
+            z-index: 1001;
+        }
+
+        #promo-nav .nav-btn,
+        #continue-nav .nav-btn {
+            font-size: 1.8vw;
+            padding: 20px 60px;
+        }
+
+        #overlay-instruction {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5vw;
+            opacity: 0.8;
+        }
+
+        #initialize-content {
+            display: none;
+        }
+
+        #youtube-player {
+            display: none;
         }
     </style>
 </head>
 <body>
 
+    <div id="overlay">
+        <div id="promo-carousel">
+            <div class="promo-slide active">
+                <video src="https://files.catbox.moe/7r5z5p.mp4" muted playsinline loop="false" onclick="claimCredits()"></video>
+            </div>
+            <div class="promo-slide">
+                <video src="https://files.catbox.moe/mzl0pk.mp4" muted playsinline loop="false" onclick="claimCredits()"></video>
+            </div>
+            <div class="promo-slide">
+                <video src="https://files.catbox.moe/ym9cua.mp4" muted playsinline loop="false" onclick="claimCredits()"></video>
+            </div>
+        </div>
+
+        <div id="promo-nav">
+            <button class="nav-btn" onclick="claimCredits()">
+                SUBSCRIBE & CLAIM 300 CREDITS NOW!
+            </button>
+        </div>
+
+        <div id="continue-nav">
+            <button class="nav-btn" onclick="switchToInitialize()">
+                CONTINUE TO NEXUS VORTEX »
+            </button>
+        </div>
+
+        <div id="initialize-content">
+            <h1>INITIALIZE NEXUS STREAM</h1>
+            <p>(Click to sync audio & visual symbiotes)</p>
+        </div>
+
+        <p id="overlay-instruction">(Click on video or subscribe button to claim credits, or continue to experience)</p>
+    </div>
+
+    <div id="ui-layer">
+        <button class="nav-btn" onclick="goBack()">« Back to Entry</button>
+        <button class="nav-btn" onclick="claimCredits()">Claim 300 Credits »</button>
+    </div>
+
+    <div id="youtube-player"></div>
+
     <div id="holoframe">
         <h2 id="planet-name">Nexus Node</h2>
         <div id="content-wrapper">
-            <div id="planet-info">Initializing data...</div>
+            <div id="planet-info">Tap or click planets to explore cosmic data streams...</div>
         </div>
         <button class="close-btn" onclick="closeHolo()">DISMISS</button>
     </div>
 
-    <div class="instruction-box">Touch/Click to explore planets • Pinch/Scroll to scale galaxy</div>
+    <div class="instruction-box">Touch/Click planets • Pinch/Drag/Scroll to navigate galaxy</div>
 
     <script type="importmap">
         {
@@ -133,123 +293,314 @@
         }
     </script>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // NASA-Sourced facts
-        const solarData = {
-            "Sun": "The Sun is a 4.5 billion-year-old star – a hot glowing ball of hydrogen and helium at the center of our solar system. It makes up more than 99% of the solar system's matter.",
-            "Mercury": "The smallest planet and closest to the Sun. It is only slightly larger than Earth's Moon and has no moons of its own.",
-            "Venus": "The hottest planet in our solar system, with a surface temperature hot enough to melt lead. It spins in the opposite direction from most planets.",
-            "Earth": "The only world known to support life so far. It is the only place in our solar system with liquid water on the surface.",
-            "Mars": "A dusty, cold, desert world with a thin atmosphere. Evidence suggests it was much wetter and warmer billions of years ago.",
-            "Jupiter": "The largest planet – twice as massive as all other planets combined. Its Great Red Spot is a storm larger than Earth.",
-            "Saturn": "Famous for its dazzling and complex system of icy rings. It has the highest count of moons in our solar system.",
-            "Uranus": "The seventh planet, rotating at a nearly 90-degree angle, making it appear to spin on its side.",
-            "Neptune": "The most distant major planet, whipped by supersonic winds and located through mathematical calculations before it was seen."
-        };
+    // Load YouTube IFrame API
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Performance optimization
-        document.body.appendChild(renderer.domElement);
+    let player;
+    let isPlayerReady = false;
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.maxDistance = 1500;
-        controls.minDistance = 10;
-
-        // Space Lighting
-        const sunLight = new THREE.PointLight(0xffffff, 3, 2000);
-        scene.add(sunLight);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.2));
-
-        // Adaptive Galaxy Background
-        const starGeo = new THREE.BufferGeometry();
-        const stars = [];
-        for(let i=0; i<10000; i++) {
-            stars.push((Math.random()-0.5)*3000, (Math.random()-0.5)*3000, (Math.random()-0.5)*3000);
-        }
-        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(stars, 3));
-        const starMat = new THREE.PointsMaterial({ size: 1.5, color: 0x00ffff, transparent: true, opacity: 0.6 });
-        const starField = new THREE.Points(starGeo, starMat);
-        scene.add(starField);
-
-        const planets = [];
-        const createBody = (name, size, dist, col) => {
-            const mesh = new THREE.Mesh(
-                new THREE.SphereGeometry(size, 32, 32),
-                new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: name === "Sun" ? 1 : 0.1 })
-            );
-            const pos = Math.random() * Math.PI * 2;
-            mesh.position.set(Math.cos(pos)*dist, 0, Math.sin(pos)*dist);
-            mesh.userData = { name, info: solarData[name] };
-            scene.add(mesh);
-            planets.push(mesh);
-
-            if(dist > 0) {
-                const ring = new THREE.Mesh(
-                    new THREE.RingGeometry(dist, dist+0.3, 128),
-                    new THREE.MeshBasicMaterial({ color: 0x00ffff, opacity: 0.1, transparent: true, side: THREE.DoubleSide })
-                );
-                ring.rotation.x = Math.PI/2;
-                scene.add(ring);
+    window.onYouTubeIframeAPIReady = () => {
+        player = new YT.Player('youtube-player', {
+            height: '0',
+            width: '0',
+            events: {
+                'onReady': onPlayerReady
             }
-        };
-
-        // Scaled for screen readability
-        createBody("Sun", 12, 0, 0xffaa00);
-        createBody("Mercury", 1.8, 35, 0x888888);
-        createBody("Venus", 3.2, 55, 0xffcc33);
-        createBody("Earth", 3.5, 80, 0x00aaff);
-        createBody("Mars", 2.5, 105, 0xff4400);
-        createBody("Jupiter", 8.5, 150, 0xffbb99);
-        createBody("Saturn", 7, 200, 0xdfd195);
-        createBody("Uranus", 5, 250, 0xccffff);
-        createBody("Neptune", 5, 300, 0x3366ff);
-
-        camera.position.set(0, 150, 300);
-
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        function handleSelect(x, y) {
-            mouse.x = (x / window.innerWidth) * 2 - 1;
-            mouse.y = -(y / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(planets);
-            if (intersects.length > 0) {
-                const p = intersects[0].object.userData;
-                document.getElementById('planet-name').innerText = p.name;
-                document.getElementById('planet-info').innerHTML = p.info;
-                document.getElementById('holoframe').classList.add('active');
-            }
-        }
-
-        window.addEventListener('click', (e) => handleSelect(e.clientX, e.clientY));
-        window.addEventListener('touchstart', (e) => handleSelect(e.touches[0].clientX, e.touches[0].clientY));
-        
-        window.closeHolo = () => document.getElementById('holoframe').classList.remove('active');
-
-        // Adaptive Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
         });
+    };
 
-        function animate() {
-            requestAnimationFrame(animate);
-            starField.rotation.y += 0.0003;
-            planets.forEach(p => p.rotation.y += 0.01);
-            controls.update();
-            renderer.render(scene, camera);
+    function onPlayerReady(event) {
+        isPlayerReady = true;
+    }
+
+    // --- NAVIGATION LOGIC ---
+    window.goBack = () => {
+        window.history.back(); 
+    };
+
+    window.claimCredits = () => {
+        window.open('https://openartai.pxf.io/c/6240385/3321097/38572', '_blank');
+    };
+
+    // Promo carousel cycling
+    const promoSlides = document.querySelectorAll('.promo-slide');
+    const videos = document.querySelectorAll('.promo-slide video');
+    let currentPromo = 0;
+
+    function cyclePromo() {
+        promoSlides.forEach(slide => slide.classList.remove('active'));
+        videos.forEach(v => v.pause());
+
+        promoSlides[currentPromo].classList.add('active');
+        videos[currentPromo].play();
+
+        currentPromo = (currentPromo + 1) % promoSlides.length;
+    }
+
+    videos.forEach(video => {
+        video.addEventListener('ended', cyclePromo);
+    });
+
+    // Start the first video
+    if (videos.length > 0) {
+        videos[0].play();
+    }
+
+    // State management
+    let state = 'promo'; // 'promo' or 'initialize'
+
+    window.switchToInitialize = () => {
+        state = 'initialize';
+        document.getElementById('promo-carousel').style.display = 'none';
+        document.getElementById('promo-nav').style.display = 'none';
+        document.getElementById('continue-nav').style.display = 'none';
+        document.getElementById('initialize-content').style.display = 'block';
+        document.getElementById('overlay-instruction').textContent = '(Click to sync audio & visual symbiotes)';
+    };
+
+    // Overlay click handler
+    const overlay = document.getElementById('overlay');
+    overlay.addEventListener('click', (e) => {
+        if (state === 'initialize' && e.target.tagName !== 'BUTTON') {
+            init();
         }
+    });
+
+    // --- CORE ENGINE ---
+    let analyser, dataArray, audioContext;
+
+    async function init() {
+        // Start YouTube playlist (shuffled/random start)
+        if (isPlayerReady) {
+            player.cuePlaylist({
+                list: 'PLlnkmUosVw9jSfM6Qo3j_m-KBQz_-6fSF',
+                listType: 'playlist',
+                suggestedQuality: 'small'
+            });
+            player.setShuffle(true);
+            player.setVolume(100);
+            player.playVideo();
+        } else {
+            console.warn('YouTube player not ready yet. Music may not start immediately.');
+        }
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const source = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        overlay.style.display = 'none';
         animate();
-    </script>
+    }
+
+    // NASA-accurate short facts (refined from official sources)
+    const solarData = {
+        "Sun": "The Sun is a 4.6 billion-year-old yellow dwarf star – a hot glowing ball of hydrogen and helium – at the center of our solar system. It accounts for 99.8% of the system's mass and its energy drives life on Earth.",
+        "Mercury": "Mercury is the smallest planet and closest to the Sun. It has extreme temperature swings, no substantial atmosphere, and is heavily cratered like Earth's Moon.",
+        "Venus": "Venus is the second planet from the Sun and the hottest in our solar system due to its thick carbon dioxide atmosphere and runaway greenhouse effect. It rotates backwards and has crushing surface pressure.",
+        "Earth": "Earth is the third planet from the Sun and the only known world to support life. It has liquid surface water, a protective atmosphere, and a magnetic field that shields it from solar radiation.",
+        "Mars": "Mars is the fourth planet from the Sun – a cold, desert world with a thin atmosphere. It features the solar system's tallest volcano (Olympus Mons) and evidence of ancient rivers and possible past habitability.",
+        "Jupiter": "Jupiter is the largest planet and fifth from the Sun. A gas giant with a Great Red Spot storm larger than Earth, it has a powerful magnetic field and at least 95 moons.",
+        "Saturn": "Saturn is the sixth planet from the Sun and famous for its extensive, complex system of icy rings. It is the least dense planet and has more moons than any other (over 145 confirmed).",
+        "Uranus": "Uranus is the seventh planet from the Sun – an ice giant that rotates on its side (axial tilt \~98°). It has a faint ring system and 28 known moons.",
+        "Neptune": "Neptune is the eighth and farthest known planet – a deep blue ice giant with the strongest winds in the solar system (up to 1,500 mph). It was discovered mathematically before being observed."
+    };
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.rotateSpeed = 0.6;
+    controls.zoomSpeed = 1.2;
+    controls.minDistance = 40;
+    controls.maxDistance = 1200;
+    controls.enablePan = false;
+
+    // Lighting
+    const sunLight = new THREE.PointLight(0xffffff, 3.5, 3000);
+    scene.add(sunLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+
+    // Starfield
+    const starGeo = new THREE.BufferGeometry();
+    const starVertices = [];
+    for(let i = 0; i < 12000; i++) {
+        const x = THREE.MathUtils.randFloatSpread(4000);
+        const y = THREE.MathUtils.randFloatSpread(4000);
+        const z = THREE.MathUtils.randFloatSpread(4000);
+        starVertices.push(x, y, z);
+    }
+    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+    const starMat = new THREE.PointsMaterial({ 
+        size: 1.8, 
+        color: 0x88ffff, 
+        transparent: true, 
+        opacity: 0.7,
+        sizeAttenuation: true 
+    });
+    const starField = new THREE.Points(starGeo, starMat);
+    scene.add(starField);
+
+    const planets = [];
+
+    const createBody = (name, radius, distance, color, emissive = 0) => {
+        const geo = new THREE.SphereGeometry(radius, 48, 48);
+        const mat = new THREE.MeshStandardMaterial({ 
+            color, 
+            emissive: color, 
+            emissiveIntensity: emissive || (name === "Sun" ? 1.4 : 0.12),
+            metalness: name === "Sun" ? 0.1 : 0.05,
+            roughness: 0.7
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        
+        // Random initial angle for natural look
+        const angle = Math.random() * Math.PI * 2;
+        mesh.position.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
+        
+        mesh.userData = { name, info: solarData[name] || "Cosmic data initializing..." };
+        scene.add(mesh);
+        planets.push(mesh);
+
+        // Orbit ring (faint)
+        if (distance > 0) {
+            const curve = new THREE.EllipseCurve(0, 0, distance, distance);
+            const points = curve.getPoints(128);
+            const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const orbitMat = new THREE.LineBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.12 });
+            const orbit = new THREE.Line(orbitGeo, orbitMat);
+            orbit.rotation.x = Math.PI / 2;
+            scene.add(orbit);
+        }
+
+        return mesh;
+    };
+
+    // Bodies (realistic relative scaling tuned for visibility)
+    const sun = createBody("Sun", 18, 0, 0xffdd00, 2.2);
+    createBody("Mercury", 2.2, 60, 0xaaaaaa);
+    createBody("Venus", 3.8, 90, 0xffcc66);
+    createBody("Earth", 4.0, 130, 0x3388ff);
+    createBody("Mars", 3.0, 180, 0xff5533);
+    createBody("Jupiter", 10, 300, 0xffbb77);
+    createBody("Saturn", 8.5, 450, 0xffeebb);
+    createBody("Uranus", 6, 650, 0xaaffff);
+    createBody("Neptune", 6, 800, 0x3366dd);
+
+    // Saturn rings (simple but iconic)
+    const saturn = planets.find(p => p.userData.name === "Saturn");
+    if (saturn) {
+        const ringGeo = new THREE.RingGeometry(12, 22, 64);
+        const ringMat = new THREE.MeshBasicMaterial({ 
+            color: 0xffeecc, 
+            side: THREE.DoubleSide, 
+            transparent: true, 
+            opacity: 0.6 
+        });
+        const rings = new THREE.Mesh(ringGeo, ringMat);
+        rings.rotation.x = Math.PI / 2.1; // slight tilt
+        saturn.add(rings);
+    }
+
+    camera.position.set(0, 220, 600);
+    controls.update();
+
+    // Interaction
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+
+    function onPointerDown(event) {
+        event.preventDefault();
+        const x = event.clientX !== undefined ? event.clientX : event.touches[0].clientX;
+        const y = event.clientY !== undefined ? event.clientY : event.touches[0].clientY;
+
+        pointer.x = (x / window.innerWidth) * 2 - 1;
+        pointer.y = -(y / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, camera);
+        const intersects = raycaster.intersectObjects(planets);
+
+        if (intersects.length > 0) {
+            const obj = intersects[0].object;
+            const data = obj.userData;
+            document.getElementById('planet-name').textContent = data.name.toUpperCase();
+            document.getElementById('planet-info').textContent = data.info;
+            document.getElementById('holoframe').classList.add('active');
+        }
+    }
+
+    window.addEventListener('click', onPointerDown);
+    window.addEventListener('touchstart', onPointerDown);
+
+    window.closeHolo = () => {
+        document.getElementById('holoframe').classList.remove('active');
+    };
+
+    // Resize
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // Gentle rotation for immersion
+        starField.rotation.y += 0.00015;
+
+        if (analyser) {
+            analyser.getByteFrequencyData(dataArray);
+
+            const avgFreq = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
+            const bassTrigger = dataArray[2] / 255;
+
+            planets.forEach((p, i) => {
+                if (p.userData.name !== "Sun") {
+                    p.rotation.y += 0.008 + (bassTrigger * 0.02);
+                } else {
+                    p.rotation.y += 0.004 + (bassTrigger * 0.01);
+                }
+
+                const freqImpact = dataArray[i % dataArray.length] / 255;
+                const s = 1 + freqImpact * 0.5; // Subtle scaling
+                p.scale.set(s, s, s);
+
+                p.material.emissiveIntensity = (p.userData.name === "Sun" ? 1.4 : 0.12) + (avgFreq * 0.8);
+            });
+
+            sunLight.intensity = 3.5 + (bassTrigger * 2);
+        } else {
+            planets.forEach(p => {
+                if (p.userData.name !== "Sun") {
+                    p.rotation.y += 0.008;
+                } else {
+                    p.rotation.y += 0.004;
+                }
+            });
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    animate();
+</script>
 </body>
 </html>
