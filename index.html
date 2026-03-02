@@ -5,7 +5,6 @@
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
         
-        /* Navigation Layer */
         #ui-layer {
             position: absolute;
             bottom: 40px;
@@ -108,10 +107,13 @@
         }
 
         #youtube-player {
-            display: none;
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
         }
 
-        /* VR Button */
         #xr-button {
             position: absolute;
             top: 40px;
@@ -128,13 +130,13 @@
     <div id="overlay">
         <div id="promo-carousel">
             <div class="promo-slide active">
-                <video src="https://files.catbox.moe/7r5z5p.mp4" muted playsinline loop="false" onclick="claimCredits()"></video>
+                <video src="https://files.catbox.moe/7r5z5p.mp4" muted playsinline loop autoplay onclick="claimCredits()"></video>
             </div>
             <div class="promo-slide">
-                <video src="https://files.catbox.moe/mzl0pk.mp4" muted playsinline loop="false" onclick="claimCredits()"></video>
+                <video src="https://files.catbox.moe/mzl0pk.mp4" muted playsinline loop autoplay onclick="claimCredits()"></video>
             </div>
             <div class="promo-slide">
-                <video src="https://files.catbox.moe/ym9cua.mp4" muted playsinline loop="false" onclick="claimCredits()"></video>
+                <video src="https://files.catbox.moe/ym9cua.mp4" muted playsinline loop autoplay onclick="claimCredits()"></video>
             </div>
         </div>
 
@@ -159,7 +161,7 @@
     </div>
 
     <div id="ui-layer">
-        <button class="nav-btn" onclick="goBack()">« Back to Entry</button>
+        <button class="nav-btn" onclick="resetToLanding()">« BACK TO ENTRY</button>
         <button class="nav-btn" onclick="claimCredits()">Claim 300 Credits »</button>
     </div>
 
@@ -168,7 +170,7 @@
 <script type="module">
     import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
 
-    // Load YouTube IFrame API
+    // YouTube IFrame API
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
     document.head.appendChild(tag);
@@ -178,101 +180,132 @@
 
     window.onYouTubeIframeAPIReady = () => {
         player = new YT.Player('youtube-player', {
-            height: '0',
-            width: '0',
+            height: '1',
+            width: '1',
+            playerVars: {
+                'playsinline': 1,
+                'controls': 0,
+                'showinfo': 0,
+                'rel': 0,
+                'modestbranding': 1
+            },
             events: {
-                'onReady': onPlayerReady
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
             }
         });
     };
 
     function onPlayerReady(event) {
         isPlayerReady = true;
+        // We'll start playback later when user proceeds
     }
 
-    // --- NAVIGATION LOGIC ---
-    window.goBack = () => {
-        window.history.back(); 
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.ENDED) {
+            // Optional: loop playlist or do nothing (shuffle already randomizes)
+        }
+    }
+
+    // Navigation
+    window.resetToLanding = () => {
+        window.location.reload(); // Full reset to promo/landing state
     };
 
     window.claimCredits = () => {
         window.open('https://openartai.pxf.io/c/6240385/3321097/38572', '_blank');
     };
 
-    // Promo carousel cycling
+    // Promo videos: infinite sequential loop
     const promoSlides = document.querySelectorAll('.promo-slide');
     const videos = document.querySelectorAll('.promo-slide video');
     let currentPromo = 0;
 
     function cyclePromo() {
         promoSlides.forEach(slide => slide.classList.remove('active'));
-        videos.forEach(v => v.pause());
-
         promoSlides[currentPromo].classList.add('active');
-        videos[currentPromo].play();
-
         currentPromo = (currentPromo + 1) % promoSlides.length;
     }
 
     videos.forEach(video => {
-        video.addEventListener('ended', cyclePromo);
+        video.addEventListener('ended', () => {
+            // Pause current, cycle to next, play it
+            video.pause();
+            cyclePromo();
+            const nextVideo = videos[currentPromo];
+            nextVideo.currentTime = 0;
+            nextVideo.play().catch(() => {}); // silent fail on mobile autoplay
+        });
     });
 
-    // Start the first video
+    // Auto-start first video
     if (videos.length > 0) {
-        videos[0].play();
+        videos[0].play().catch(() => {});
     }
 
-    // State management
-    let state = 'promo'; // 'promo' or 'initialize'
+    // State
+    let state = 'promo';
 
     window.switchToInitialize = () => {
+        if (state !== 'promo') return;
         state = 'initialize';
+
         document.getElementById('promo-carousel').style.display = 'none';
         document.getElementById('promo-nav').style.display = 'none';
         document.getElementById('continue-nav').style.display = 'none';
         document.getElementById('initialize-content').style.display = 'block';
-        document.getElementById('overlay-instruction').textContent = '(Click to sync audio & visual symbiotes)';
+        document.getElementById('overlay-instruction').textContent = '(Click anywhere to sync symbiotes)';
+
+        // Start audio here (user gesture context)
+        startAudioExperience();
     };
 
-    // Overlay click handler
+    // Overlay click → enter experience
     const overlay = document.getElementById('overlay');
     overlay.addEventListener('click', (e) => {
         if (state === 'initialize' && e.target.tagName !== 'BUTTON') {
-            init();
+            initVisualsAndAudio();
         }
     });
 
-    // --- CORE ENGINE ---
+    // --- Audio + VR + Core Engine ---
     let analyser, dataArray, audioContext;
     let initialized = false;
 
-    async function init() {
+    async function startAudioExperience() {
+        if (isPlayerReady && player) {
+            try {
+                player.setVolume(100);
+                player.setShuffle(true);
+                player.cuePlaylist({
+                    list: 'PLlnkmUosVw9jSfM6Qo3j_m-KBQz_-6fSF',
+                    listType: 'playlist',
+                    index: Math.floor(Math.random() * 50) // rough random start
+                });
+                player.playVideo();
+            } catch (err) {
+                console.warn('YouTube start failed:', err);
+            }
+        }
+    }
+
+    async function initVisualsAndAudio() {
         if (initialized) return;
         initialized = true;
 
-        // Start YouTube playlist (shuffled/random start)
-        if (isPlayerReady) {
-            player.cuePlaylist({
-                list: 'PLlnkmUosVw9jSfM6Qo3j_m-KBQz_-6fSF',
-                listType: 'playlist',
-                suggestedQuality: 'small'
-            });
-            player.setShuffle(true);
-            player.setVolume(100);
-            player.playVideo();
-        } else {
-            console.warn('YouTube player not ready yet. Music may not start immediately.');
-        }
+        overlay.style.display = 'none';
 
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const source = audioContext.createMediaStreamSource(stream);
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        source.connect(analyser);
-        dataArray = new Uint8Array(analyser.frequencyBinCount);
-        overlay.style.display = 'none';
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const source = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        } catch (err) {
+            console.warn('Mic access denied — using fallback animation amplitude');
+        }
     }
 
     const scene = new THREE.Scene();
@@ -281,14 +314,9 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // === WEBXR INTEGRATION ===
     renderer.xr.enabled = true;
 
     let xrButton = null;
-    let gripped = false;
-    const gripStartQuat = new THREE.Quaternion();
-    const nodeGroupStartQuat = new THREE.Quaternion();
-    const autoSpinQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.002);
 
     async function checkForXR() {
         if (!('xr' in navigator)) return;
@@ -298,13 +326,6 @@
             xrButton.id = 'xr-button';
             xrButton.className = 'nav-btn';
             xrButton.textContent = '🌌 ENTER VR IMMERSION';
-            xrButton.style.position = 'absolute';
-            xrButton.style.top = '40px';
-            xrButton.style.left = '50%';
-            xrButton.style.transform = 'translateX(-50%)';
-            xrButton.style.zIndex = '1100';
-            xrButton.style.fontSize = '1.6em';
-            xrButton.style.padding = '20px 55px';
             document.body.appendChild(xrButton);
             xrButton.onclick = enterVRSession;
         }
@@ -314,39 +335,38 @@
         if (state === 'promo') {
             switchToInitialize();
         }
-        init(); // start music + mic (fires in user-gesture context)
+        await initVisualsAndAudio(); // ensure audio + mic
 
         try {
             const session = await navigator.xr.requestSession('immersive-vr', {
                 optionalFeatures: ['local-floor']
             });
-
             renderer.xr.setReferenceSpaceType('local-floor');
             session.addEventListener('end', onSessionEnded);
-
             await renderer.xr.setSession(session);
 
-            // VR-optimized positioning & scale (room-scale feel)
             nodeGroup.position.set(0, 1.6, -3.5);
             nodeGroup.scale.setScalar(2.8);
-
         } catch (error) {
-            console.error('Unable to enter VR session:', error);
+            console.error('VR session failed:', error);
             if (xrButton) xrButton.textContent = 'VR UNAVAILABLE';
         }
     };
 
     function onSessionEnded() {
         if (xrButton) xrButton.textContent = '🌌 RE-ENTER VR IMMERSION';
-        // reset positioning for desktop continuation
         nodeGroup.position.set(0, 0, 0);
         nodeGroup.scale.setScalar(1);
         nodeGroup.quaternion.set(0, 0, 0, 1);
     }
 
-    // VR controller setup (right hand squeeze = grab & manipulate vortex in 3D)
     const rightController = renderer.xr.getController(1);
     scene.add(rightController);
+
+    let gripped = false;
+    const gripStartQuat = new THREE.Quaternion();
+    const nodeGroupStartQuat = new THREE.Quaternion();
+    const autoSpinQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.002);
 
     rightController.addEventListener('squeezestart', () => {
         gripped = true;
@@ -354,10 +374,9 @@
         nodeGroupStartQuat.copy(nodeGroup.quaternion);
     });
 
-    rightController.addEventListener('squeezeend', () => {
-        gripped = false;
-    });
+    rightController.addEventListener('squeezeend', () => gripped = false);
 
+    // 4D tesseract setup (unchanged)
     const vertices4D = [];
     for (let i = 0; i < 16; i++) {
         vertices4D.push([i&1?1:-1, i&2?1:-1, i&4?1:-1, i&8?1:-1]);
@@ -394,15 +413,14 @@
     let angle = 0;
 
     function animate() {
-        if (!analyser) {
-            if (!gripped) nodeGroup.quaternion.multiply(autoSpinQuat);
-            renderer.render(scene, camera);
-            return;
+        renderer.setAnimationLoop(animate);
+
+        let bassTrigger = 0.1; // fallback
+        if (analyser) {
+            analyser.getByteFrequencyData(dataArray);
+            bassTrigger = dataArray[2] / 255;
         }
 
-        analyser.getByteFrequencyData(dataArray);
-
-        const bassTrigger = dataArray[2] / 255;
         angle += 0.005 + (bassTrigger * 0.04);
 
         const cosA = Math.cos(angle);
@@ -420,7 +438,7 @@
 
         nodes.forEach((node, i) => {
             node.position.copy(projected3D[i]);
-            const s = 1 + (dataArray[i % 16] / 255) * 4;
+            const s = 1 + ((analyser ? dataArray[i % 16] : 80) / 255) * 4;
             node.scale.set(s, s, s);
         });
 
@@ -428,7 +446,6 @@
             line.geometry.setFromPoints([projected3D[i], projected3D[j]]);
         });
 
-        // VR-aware spin + manual manipulation
         if (!gripped) {
             nodeGroup.quaternion.multiply(autoSpinQuat);
         } else if (rightController) {
@@ -439,11 +456,10 @@
         renderer.render(scene, camera);
     }
 
-    // Start everything
+    // Kick off
     checkForXR();
-    renderer.setAnimationLoop(animate);
+    animate();
 
-    // Resize handler
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
